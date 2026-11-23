@@ -1,229 +1,2319 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8">
+<html lang="fr">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mon Hub Multi-Agents V2.3 — Supabase</title>
+<meta name="theme-color" content="#0b1633">
+<title>Mon Hub Multi-Agents V3</title>
+
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
 <style>
-:root{--bg:#f4f5f8;--sf:#fff;--tx:#14213d;--mu:#6b7385;--bd:#dfe3ec;--ac:#1d4ed8;--go:#b8860b;--ok:#15803d;--er:#b91c1c;--wa:#b45309;--nav:#0b1633;--navt:#c9d3ee}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0a1228;--sf:#111c3a;--tx:#e8ecf7;--mu:#8e9ab8;--bd:#223059;--ac:#6d9bff;--go:#e0b44c;--ok:#4ade80;--er:#f87171;--wa:#fbbf24;--nav:#060c1e}}
-:root[data-theme=dark]{--bg:#0a1228;--sf:#111c3a;--tx:#e8ecf7;--mu:#8e9ab8;--bd:#223059;--ac:#6d9bff;--go:#e0b44c;--ok:#4ade80;--er:#f87171;--wa:#fbbf24;--nav:#060c1e}
-*{box-sizing:border-box}html,body{height:100%;margin:0}
-body{font:14px/1.5 'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+:root{
+--bg:#f4f5f8;--sf:#fff;--tx:#14213d;--mu:#6b7385;
+--bd:#dfe3ec;--ac:#1d4ed8;--go:#b8860b;--ok:#15803d;
+--er:#b91c1c;--wa:#b45309;--nav:#0b1633;--navt:#c9d3ee;
+}
+@media(prefers-color-scheme:dark){
+:root:not([data-theme=light]){
+--bg:#0a1228;--sf:#111c3a;--tx:#e8ecf7;--mu:#8e9ab8;
+--bd:#223059;--ac:#6d9bff;--go:#e0b44c;--ok:#4ade80;
+--er:#f87171;--wa:#fbbf24;--nav:#060c1e;
+}}
+:root[data-theme=dark]{
+--bg:#0a1228;--sf:#111c3a;--tx:#e8ecf7;--mu:#8e9ab8;
+--bd:#223059;--ac:#6d9bff;--go:#e0b44c;--ok:#4ade80;
+--er:#f87171;--wa:#fbbf24;--nav:#060c1e;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+font:14px/1.5 'IBM Plex Sans',system-ui,sans-serif;
+background:var(--bg);color:var(--tx);
+padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)
+}
 #app{display:grid;grid-template-columns:auto 1fr auto;height:100%}
-nav{background:var(--nav);color:var(--navt);width:220px;overflow:auto;transition:width .2s;padding:10px 8px}
-nav.c{width:56px}nav.c .t{display:none}
-nav h1{font-size:15px;margin:6px 8px 14px;color:#fff;display:flex;gap:8px;align-items:center;cursor:pointer}
-nav button{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;width:100%;padding:8px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
-nav button:hover{background:#ffffff14}nav button.on{background:#ffffff1f;color:#fff;box-shadow:inset 3px 0 var(--go)}
-nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--go);outline-offset:1px}
+nav{
+background:var(--nav);color:var(--navt);width:220px;overflow:auto;
+transition:width .2s;padding:10px 8px
+}
+nav.c{width:56px}
+nav.c .t{display:none}
+nav h1{
+font-size:15px;margin:6px 8px 14px;color:#fff;
+display:flex;gap:8px;align-items:center;cursor:pointer
+}
+nav button{
+all:unset;box-sizing:border-box;display:flex;gap:10px;
+align-items:center;width:100%;padding:8px 10px;border-radius:8px;
+cursor:pointer;white-space:nowrap
+}
+nav button:hover{background:#ffffff14}
+nav button.on{background:#ffffff1f;color:#fff;box-shadow:inset 3px 0 var(--go)}
 nav .n{margin-left:auto;background:var(--go);color:#000;border-radius:9px;padding:0 6px;font-size:11px}
 main{overflow:auto;padding:18px 22px;min-width:0}
 aside{width:300px;border-left:1px solid var(--bd);background:var(--sf);overflow:auto;padding:14px}
 aside.h{display:none}
 .top{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .top h2{margin:0;font-size:20px;font-weight:600;flex:1}
-input,select,textarea{font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;width:100%}
-.btn{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--sf);color:var(--tx);border-radius:8px;padding:6px 12px}
-.btn:hover{border-color:var(--ac)}.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}.btn.d{color:var(--er)}.btn.s{padding:3px 9px;font-size:12px}
+input,select,textarea{
+font:inherit;color:var(--tx);background:var(--sf);
+border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%
+}
+textarea{resize:vertical}
+.btn{
+font:inherit;cursor:pointer;border:1px solid var(--bd);
+background:var(--sf);color:var(--tx);border-radius:8px;padding:6px 12px
+}
+.btn:hover{border-color:var(--ac)}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.d{color:var(--er)}
+.btn.s{padding:3px 9px;font-size:12px}
 .g{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px}
-.big{font-size:28px;font-weight:600}.mu{color:var(--mu);font-size:12px}
+.big{font-size:28px;font-weight:600}
+.mu{color:var(--mu);font-size:12px}
 .tag{display:inline-block;border:1px solid var(--bd);border-radius:6px;padding:0 7px;font-size:11px;margin-right:4px}
-.ok{color:var(--ok);border-color:var(--ok)}.er{color:var(--er);border-color:var(--er)}.wa{color:var(--wa);border-color:var(--wa)}.go{color:var(--go);border-color:var(--go)}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.ok{color:var(--ok);border-color:var(--ok)}
+.er{color:var(--er);border-color:var(--er)}
+.wa{color:var(--wa);border-color:var(--wa)}
+.go{color:var(--go);border-color:var(--go)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
 .cc{border:1px solid var(--go);border-radius:12px;padding:14px;background:var(--sf);margin-bottom:14px}
-.cc h3{margin:0 0 8px;font-size:14px;color:var(--go);font-weight:600}
+.cc h3{margin:0 0 8px;font-size:14px;color:var(--go)}
 .l>div{display:flex;gap:10px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--bd)}
-.kan{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}.kan .card{padding:8px}
+.kan{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kan .card{padding:8px}
 .empty{padding:26px;text-align:center;color:var(--mu);border:1px dashed var(--bd);border-radius:10px}
-dialog{border:1px solid var(--bd);border-radius:12px;background:var(--sf);color:var(--tx);width:min(460px,92vw)}
-dialog::backdrop{background:#0008}dialog label{display:block;margin:8px 0 2px;font-size:12px;color:var(--mu)}
-#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--nav);color:#fff;padding:8px 14px;border-radius:8px;display:none;z-index:9}
-.bar{display:flex;align-items:flex-end;gap:6px;height:90px}.bar i{flex:1;background:var(--ac);border-radius:3px 3px 0 0;min-height:2px}
-pre{white-space:pre-wrap;font-size:12px;margin:0}
-@media(max-width:760px){#app{grid-template-columns:auto 1fr}aside{position:fixed;right:0;top:0;bottom:0;z-index:5}nav{width:56px}nav .t{display:none}main{padding:12px}}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--sf);color:var(--tx);width:min(500px,92vw)}
+dialog::backdrop{background:#0008}
+dialog label{display:block;margin:8px 0 2px;font-size:12px;color:var(--mu)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--nav);color:#fff;padding:10px 15px;border-radius:8px;display:none;z-index:99;max-width:90%}
+.bar{display:flex;align-items:flex-end;gap:6px;height:90px}
+.bar i{flex:1;background:var(--ac);border-radius:3px 3px 0 0;min-height:2px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;margin:0}
+.task-result{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
+textarea{min-height:75px}
+@media(max-width:760px){
+#app{grid-template-columns:auto 1fr}
+aside{position:fixed;right:0;top:0;bottom:0;z-index:5}
+nav{width:56px}
+nav .t{display:none}
+main{padding:12px}
+}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-</style></head><body>
-<div id="app"><nav id="nav"></nav><main id="main"></main><aside id="side" class="h"></aside></div>
-<dialog id="dlg"></dialog><div id="toast" role="status"></div>
+</style>
+</head>
+
+<body>
+<div id="app">
+<nav id="nav"></nav>
+<main id="main"></main>
+<aside id="side" class="h"></aside>
+</div>
+
+<dialog id="dlg"></dialog>
+<div id="toast" role="status"></div>
+
 <script>
 'use strict';
-/* ===== Utilitaires ===== */
-const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid=p=>p+'_'+Math.random().toString(36).slice(2,9),now=()=>new Date().toISOString(),fmt=t=>new Date(t).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
+
+/* ==========================================================
+   MON HUB MULTI-AGENTS V3
+   Supabase + AI Gateway + Gemini
+   ========================================================== */
+
+/* ================= UTILITAIRES ================= */
+
+const $=s=>document.querySelector(s);
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
+'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+
+const uid=p=>p+'_'+crypto.randomUUID().slice(0,8);
+const now=()=>new Date().toISOString();
+const fmt=t=>new Date(t).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2800)}
 
-/* ===== Persistence Manager (IndexedDB, repli mémoire) ===== */
-const Persist={db:null,
-async init(){try{this.db=await new Promise((ok,ko)=>{const r=indexedDB.open('hub_v21',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko()})}catch{this.db=null}},
-async load(){if(!this.db)return null;return new Promise(ok=>{const q=this.db.transaction('kv').objectStore('kv').get('state');q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)})},
-save(s){if(!this.db)return;try{this.db.transaction('kv','readwrite').objectStore('kv').put(JSON.parse(JSON.stringify(s)),'state')}catch{}}};
+function toast(m){
+const t=$('#toast');
+t.textContent=m;
+t.style.display='block';
+clearTimeout(toast.t);
+toast.t=setTimeout(()=>t.style.display='none',3500);
+}
 
-/* ===== État & migration ===== */
-const VER=2.3;
-const CAPS=['coordination','vente','marketing','finance','administration','recherche','rédaction','technique','analyse','production'];
-const MODELS=['local-simulé','openai-compatible (backend requis)','anthropic (backend requis)','moteur local (backend requis)'];
-const mkAgent=(name,cat,mission,caps,demo)=>({id:uid('ag'),name,cat,mission,instr:'',model:MODELS[0],caps,tools:[],perms:{actionsSensibles:false},state:'actif',created:now(),runs:0,fails:0,demo});
-const defaults=()=>({v:VER,agents:[mkAgent('Coordinateur','Agent coordinateur','Répartit les demandes entre agents',['coordination'],1),mkAgent('Commercial','Agent commercial','Qualifie les prospects et prépare les relances',['vente','analyse'],1),mkAgent('Rédacteur','Agent rédactionnel','Rédige messages et contenus',['rédaction','marketing'],1),mkAgent('Analyste','Agent analyste','Évalue données et priorités',['analyse','finance','recherche'],1)],
-tasks:[],workflows:[],kb:[],mem:[],audit:[],events:[],cats:['Agent coordinateur','Agent commercial','Agent marketing','Agent financier','Agent administratif','Agent de recherche','Agent rédactionnel','Agent technique','Agent de production','Agent analyste','Agent personnel','Agent personnalisé'],
-conn:{},cfg:{theme:'auto',retention:90}});
+function clean(s){
+return String(s||'').replace(/[<>]/g,'').slice(0,4000);
+}
+
+function save(){
+Persist.save(S);
+}
+
+function audit(a,d){
+S.audit.unshift({ts:now(),a,d});
+S.audit.length=Math.min(S.audit.length,500);
+save();
+}
+
+/* ================= PERSISTENCE ================= */
+
+const Persist={
+db:null,
+
+async init(){
+try{
+this.db=await new Promise((ok,ko)=>{
+const r=indexedDB.open('hub_v23',1);
+r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+r.onsuccess=()=>ok(r.result);
+r.onerror=()=>ko(r.error);
+});
+}catch(e){
+console.error('IndexedDB indisponible',e);
+this.db=null;
+}
+},
+
+async load(){
+if(!this.db)return null;
+return new Promise(ok=>{
+const q=this.db.transaction('kv').objectStore('kv').get('state');
+q.onsuccess=()=>ok(q.result||null);
+q.onerror=()=>ok(null);
+});
+},
+
+save(s){
+if(!this.db)return;
+try{
+this.db.transaction('kv','readwrite')
+.objectStore('kv').put(JSON.parse(JSON.stringify(s)),'state');
+}catch(e){
+console.error('Erreur sauvegarde',e);
+}
+}
+};
+
+/* ================= ÉTAT ================= */
+
+const VER=3;
+
+const CAPS=[
+'coordination','vente','marketing','finance','administration',
+'recherche','rédaction','technique','analyse','production'
+];
+
+const MODELS=[
+'local-simulé',
+'gemini-3.5-flash-lite',
+'gemini-3.8-flash',
+'openai-compatible (backend requis)',
+'anthropic (backend requis)',
+'moteur local (backend requis)'
+];
+
+const mkAgent=(name,cat,mission,caps,demo)=>({
+id:uid('ag'),name,cat,mission,instr:'',
+model:'local-simulé',caps,tools:[],
+perms:{actionsSensibles:false},
+state:'actif',created:now(),runs:0,fails:0,demo
+});
+
+const defaults=()=>({
+v:VER,
+
+agents:[
+mkAgent('Coordinateur','Agent coordinateur',
+'Répartit les demandes entre agents',['coordination'],1),
+
+mkAgent('Commercial','Agent commercial',
+'Qualifie les prospects et prépare les relances',['vente','analyse'],1),
+
+mkAgent('Rédacteur','Agent rédactionnel',
+'Rédige messages et contenus',['rédaction','marketing'],1),
+
+mkAgent('Analyste','Agent analyste',
+'Évalue données et priorités',['analyse','finance','recherche'],1)
+],
+
+tasks:[],
+workflows:[],
+kb:[],
+mem:[],
+audit:[],
+events:[],
+
+cats:[
+'Agent coordinateur','Agent commercial','Agent marketing',
+'Agent financier','Agent administratif','Agent de recherche',
+'Agent rédactionnel','Agent technique','Agent de production',
+'Agent analyste','Agent personnel','Agent personnalisé'
+],
+
+conn:{},
+
+cfg:{
+theme:'auto',
+retention:90,
+sburl:'',
+sbkey:'',
+sbSession:null,
+model:'gemini-3.5-flash-lite'
+}
+});
+
 let S=defaults();
-function migrate(d){if(!d)return;S={...defaults(),...d,cfg:{...defaults().cfg,...(d.cfg||{})}};S.v=VER}
-function importLegacy(){try{const o=JSON.parse(localStorage.getItem('HUB_USER_V1')||'null');if(!o)return 0;let n=0;(o.agents||[]).forEach(a=>{const name=a.name||a.nom||a.n;if(name&&!S.agents.some(x=>x.name===name)){S.agents.push(mkAgent(name,'Agent personnalisé',a.mission||a.desc||'Importé de Hub V1',[],0));n++}});return n}catch{return 0}}
-const save=()=>Persist.save(S);
 
-/* ===== Event Bus ===== */
-const Bus={subs:{},on(t,f){(this.subs[t]??=[]).push(f)},
-emit(type,source,payload={},o={}){const e={id:uid('ev'),type,source,dest:o.dest||null,ts:now(),payload,corr:o.corr||uid('co'),prio:o.prio||'normale'};S.events.unshift(e);S.events.length=Math.min(S.events.length,500);[...(this.subs[type]||[]),...(this.subs['*']||[])].forEach(f=>{try{f(e)}catch(x){console.error(x)}});save();return e}};
-Bus.on('*',e=>{if(['AGENT_FAILED','SYSTEM_ALERT'].includes(e.type))toast(e.type+' : '+(e.payload.msg||''))});
-const audit=(a,d)=>{S.audit.unshift({ts:now(),a,d});S.audit.length=Math.min(S.audit.length,500)};
+function migrate(d){
+if(!d)return;
 
-/* ===== Security Manager ===== */
-const Sec={clean:s=>String(s||'').replace(/[<>]/g,'').slice(0,4000),
-suspect:s=>/ignore (all|previous)|ignore les instructions|api[_ -]?key|mot de passe/i.test(s),
-MAX_TASKS:12,MAX_RETRY:2};
+S={
+...defaults(),
+...d,
+cfg:{...defaults().cfg,...(d.cfg||{})}
+};
 
-/* ===== Agent Runtime (adaptateur fournisseur) ===== */
-const Runtime={async run(agent,task){
- if(agent.state!=='actif')throw new Error('Agent non actif');
- if(!agent.model.startsWith('local'))throw new Error('Fournisseur « '+agent.model+' » : backend non configuré');
- await sleep(400+Math.random()*500);
- return {simule:true,texte:`[SIMULÉ – aucun modèle IA appelé] ${agent.name} a pris en charge « ${task.title} ». Branchez un fournisseur via un backend pour obtenir un vrai résultat.`}}};
+S.v=VER;
 
-/* ===== Task Manager + Orchestrateur ===== */
+S.agents=(S.agents||[]).map(a=>({
+...mkAgent(a.name||'Agent','Agent personnalisé',a.mission||'',a.caps||[],0),
+...a,
+id:a.id||uid('ag'),
+caps:a.caps||a.capabilities||[],
+state:a.state||'actif',
+model:a.model||'local-simulé',
+runs:a.runs||0,
+fails:a.fails||0
+}));
+
+S.tasks=S.tasks||[];
+S.workflows=S.workflows||[];
+S.kb=S.kb||[];
+S.mem=S.mem||[];
+S.audit=S.audit||[];
+S.events=S.events||[];
+}
+
+/* ================= IMPORT ANCIEN HUB ================= */
+
+function importLegacy(){
+try{
+const o=JSON.parse(localStorage.getItem('HUB_USER_V1')||'null');
+if(!o)return 0;
+
+let n=0;
+
+(o.agents||[]).forEach(a=>{
+const name=a.name||a.nom||a.n;
+
+if(name&&!S.agents.some(x=>x.name===name)){
+S.agents.push(mkAgent(
+name,
+'Agent personnalisé',
+a.mission||a.desc||'Importé de Hub V1',
+[],
+0
+));
+n++;
+}
+});
+
+return n;
+}catch{
+return 0;
+}
+}
+
+/* ================= EVENT BUS ================= */
+
+const Bus={
+subs:{},
+
+on(t,f){
+(this.subs[t]??=[]).push(f);
+},
+
+emit(type,source,payload={},o={}){
+const e={
+id:uid('ev'),
+type,
+source,
+dest:o.dest||null,
+ts:now(),
+payload,
+corr:o.corr||uid('co'),
+prio:o.prio||'normale'
+};
+
+S.events.unshift(e);
+S.events.length=Math.min(S.events.length,500);
+
+[...(this.subs[type]||[]),...(this.subs['*']||[])].forEach(f=>{
+try{f(e)}catch(x){console.error(x)}
+});
+
+save();
+return e;
+}
+};
+
+Bus.on('*',e=>{
+if(['AGENT_FAILED','SYSTEM_ALERT'].includes(e.type)){
+toast(e.type+' : '+(e.payload.msg||''));
+}
+});
+
+/* ================= SÉCURITÉ ================= */
+
+const Sec={
+MAX_TASKS:12,
+MAX_RETRY:2,
+
+suspect(s){
+return /ignore (all|previous)|ignore les instructions|api[_ -]?key|mot de passe/i.test(s);
+}
+};
+
+/* ================= SUPABASE ================= */
+
+const SB={
+session:null,
+
+config(){
+return{
+url:(S.cfg.sburl||'').trim().replace(/\/$/,''),
+key:(S.cfg.sbkey||'').trim()
+};
+},
+
+get connected(){
+const c=this.config();
+return !!(c.url&&c.key);
+},
+
+get token(){
+return this.session?.access_token||this.config().key;
+},
+
+headers(extra={}){
+const c=this.config();
+
+return{
+apikey:c.key,
+Authorization:'Bearer '+this.token,
+'Content-Type':'application/json',
+Accept:'application/json',
+...extra
+};
+},
+
+async request(path,opts={}){
+const c=this.config();
+
+if(!c.url||!c.key){
+throw new Error('Configurez Supabase dans les Paramètres.');
+}
+
+let response;
+
+try{
+response=await fetch(c.url+path,{
+...opts,
+headers:this.headers(opts.headers||{})
+});
+}catch(e){
+throw new Error('Erreur réseau ou CORS : '+e.message);
+}
+
+const raw=await response.text();
+let data;
+
+try{
+data=raw?JSON.parse(raw):null;
+}catch{
+data=raw;
+}
+
+if(!response.ok){
+const msg=
+data?.message||
+data?.msg||
+data?.error_description||
+data?.details||
+data?.hint||
+(typeof data==='string'?data:'HTTP '+response.status);
+
+throw new Error('HTTP '+response.status+' — '+msg);
+}
+
+return data;
+},
+
+setSession(data){
+this.session=data||null;
+
+S.cfg.sbSession=this.session?{
+access_token:this.session.access_token,
+refresh_token:this.session.refresh_token,
+token_type:this.session.token_type||'bearer',
+expires_at:this.session.expires_at||
+(this.session.expires_in?
+Math.floor(Date.now()/1000)+this.session.expires_in:null),
+user:this.session.user
+}:null;
+
+save();
+},
+
+async restore(){
+const saved=S.cfg.sbSession;
+
+if(!saved?.access_token||!saved?.refresh_token){
+return false;
+}
+
+this.session=saved;
+
+const exp=Number(saved.expires_at||0);
+
+if(exp&&exp<Date.now()/1000+60){
+try{
+const d=await this.request('/auth/v1/token?grant_type=refresh_token',{
+method:'POST',
+body:JSON.stringify({refresh_token:saved.refresh_token})
+});
+
+if(d.access_token){
+this.setSession(d);
+}else{
+throw new Error('Jeton absent');
+}
+}catch(e){
+this.session=null;
+S.cfg.sbSession=null;
+save();
+return false;
+}
+}
+
+return !!this.session?.access_token;
+},
+
+async auth(type,email,password){
+if(!email||!password){
+throw new Error('E-mail et mot de passe obligatoires.');
+}
+
+const path=type==='signup'
+?'/auth/v1/signup'
+:'/auth/v1/token?grant_type=password';
+
+const data=await this.request(path,{
+method:'POST',
+body:JSON.stringify({email,password})
+});
+
+if(data.access_token&&data.refresh_token){
+this.setSession(data);
+}
+
+return data;
+},
+
+logout(){
+this.session=null;
+S.cfg.sbSession=null;
+save();
+},
+
+async test(){
+return this.request('/rest/v1/agents?select=id&limit=1');
+},
+
+async upsertAgent(a){
+if(!this.session?.user?.id){
+throw new Error('Connectez-vous à Supabase.');
+}
+
+const id=a.supabase_id||crypto.randomUUID();
+
+a.supabase_id=id;
+
+const row={
+id,
+owner_id:this.session.user.id,
+name:a.name,
+description:a.mission||'',
+system_prompt:a.instr||'',
+model_provider:a.model.startsWith('gemini')?'gemini':'local',
+model_name:a.model||'local-simulé',
+status:a.state==='actif'?'active':a.state==='pause'?'paused':'draft',
+capabilities:a.caps||[],
+permissions:a.perms||{},
+config:{
+category:a.cat||'Agent personnalisé',
+local_id:a.id
+},
+version:1
+};
+
+await this.request('/rest/v1/agents?on_conflict=id',{
+method:'POST',
+headers:{
+Prefer:'resolution=merge-duplicates,return=minimal'
+},
+body:JSON.stringify(row)
+});
+
+return id;
+},
+
+async push(){
+if(!this.session?.user?.id){
+throw new Error('Connectez-vous d’abord.');
+}
+
+let n=0;
+
+for(const a of S.agents){
+await this.upsertAgent(a);
+n++;
+}
+
+return n;
+},
+
+async pull(){
+if(!this.session?.user?.id){
+throw new Error('Connectez-vous d’abord.');
+}
+
+const owner=this.session.user.id;
+
+const rows=await this.request(
+'/rest/v1/agents?select=*&owner_id=eq.'+
+encodeURIComponent(owner)+'&order=updated_at.desc'
+);
+
+for(const r of rows){
+
+const localId=r.config?.local_id;
+
+let existing=localId
+?S.agents.find(a=>a.id===localId)
+:S.agents.find(a=>a.supabase_id===r.id);
+
+const mapped={
+id:existing?.id||localId||r.id,
+supabase_id:r.id,
+name:r.name,
+cat:r.config?.category||'Agent personnalisé',
+mission:r.description||'',
+instr:r.system_prompt||'',
+model:r.model_name||'local-simulé',
+caps:Array.isArray(r.capabilities)?r.capabilities:[],
+tools:[],
+perms:r.permissions||{},
+state:r.status==='active'?'actif':'pause',
+created:r.created_at||now(),
+runs:existing?.runs||0,
+fails:existing?.fails||0,
+demo:0
+};
+
+if(existing){
+Object.assign(existing,mapped);
+}else{
+S.agents.push(mapped);
+}
+}
+
+save();
+render();
+
+return rows.length;
+}
+};
+
+/* ================= AGENT RUNTIME IA ================= */
+
+const Runtime={
+async run(agent,task){
+
+if(!agent){
+throw new Error('Agent introuvable.');
+}
+
+if(agent.state!=='actif'){
+throw new Error('Agent non actif.');
+}
+
+/* MODE LOCAL SIMULÉ */
+
+if(agent.model.startsWith('local')){
+await sleep(350);
+
+return{
+simule:true,
+texte:
+'[SIMULÉ — aucun modèle IA appelé]\n\n'+
+agent.name+' a pris en charge : '+task.title+
+'\n\nConnectez un modèle Gemini dans les paramètres de l’agent pour obtenir une véritable réponse IA.'
+};
+}
+
+/* GEMINI VIA SUPABASE */
+
+if(agent.model.startsWith('gemini-')){
+
+if(!SB.session?.access_token){
+throw new Error(
+'Connexion Supabase requise. Connectez-vous dans Paramètres.'
+);
+}
+
+const prompt=`
+IDENTITÉ DE L'AGENT
+Nom : ${agent.name}
+Catégorie : ${agent.cat||'Agent spécialisé'}
+
+MISSION
+${agent.mission||'Assistance générale'}
+
+INSTRUCTIONS SYSTÈME
+${agent.instr||'Tu es un assistant professionnel, rigoureux et efficace.'}
+
+CAPACITÉS
+${(agent.caps||[]).join(', ')||'Assistance générale'}
+
+TÂCHE
+${task.desc||task.title}
+
+TITRE DE LA TÂCHE
+${task.title}
+
+CONSIGNES
+- Exécute la tâche et produis un résultat concret.
+- Réponds en français sauf si la tâche demande une autre langue.
+- Structure clairement le résultat.
+- N'invente pas de faits.
+- Signale les informations manquantes.
+- Ne prétends pas avoir réalisé des actions externes non disponibles.
+`;
+
+const data=await SB.request('/functions/v1/ai-gateway',{
+method:'POST',
+body:JSON.stringify({
+model:agent.model,
+prompt:prompt
+})
+});
+
+if(!data||data.success!==true){
+throw new Error(
+data?.error||
+data?.message||
+'Erreur du Gateway IA.'
+);
+}
+
+if(!data.reply){
+throw new Error('Réponse IA vide.');
+}
+
+return{
+simule:false,
+texte:data.reply,
+model:data.model||agent.model,
+usage:data.usage||null,
+attempts:data.attempts||1
+};
+}
+
+/* FOURNISSEURS NON CONFIGURÉS */
+
+throw new Error(
+'Fournisseur non configuré : '+agent.model
+);
+}
+};
+
+/* ================= ORCHESTRATEUR ================= */
+
 const Orch={
-plan(text,mode){text=Sec.clean(text);const w=text.toLowerCase();
- const act=S.agents.filter(a=>a.state==='actif');
- const sc=a=>a.caps.reduce((n,c)=>n+(w.includes(c.slice(0,5))?2:0),0)+(a.mission.toLowerCase().split(/\W+/).filter(x=>x.length>4&&w.includes(x)).length);
- let sel=act.map(a=>[a,sc(a)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,Sec.MAX_TASKS);
- if(!sel.length)sel=act.filter(a=>a.caps.includes('coordination')).slice(0,1);
- const corr=uid('co');let prev=null;
- const ts=sel.map(a=>{const t={id:uid('tk'),title:`${a.name} : ${text.slice(0,60)}`,desc:text,agent:a.id,prio:'normale',created:now(),due:'',status:'validation',deps:mode==='sequentiel'&&prev?[prev]:[],result:null,hist:[{ts:now(),s:'créée'}],corr,sensible:Sec.suspect(text)};prev=t.id;return t});
- ts.forEach(t=>{S.tasks.unshift(t);Bus.emit('TASK_CREATED','orchestrateur',{id:t.id},{corr})});
- audit('Plan orchestrateur',`${ts.length} tâche(s), mode ${mode}`);save();return ts},
-async exec(t,tries=0){const a=S.agents.find(x=>x.id===t.agent);
- t.status='en cours';t.hist.push({ts:now(),s:'démarrée'});Bus.emit('AGENT_STARTED',a?.name,{task:t.id},{corr:t.corr});render();
- try{const r=await Runtime.run(a,t);t.result=r;t.status='terminée';a.runs++;t.hist.push({ts:now(),s:'terminée'});Bus.emit('TASK_COMPLETED',a.name,{task:t.id},{corr:t.corr});Bus.emit('AGENT_COMPLETED',a.name,{task:t.id},{corr:t.corr})}
- catch(e){if(tries<Sec.MAX_RETRY&&!/backend/.test(e.message)){t.hist.push({ts:now(),s:'reprise '+(tries+1)});return this.exec(t,tries+1)}
-  t.status='erreur';t.result={erreur:e.message};a&&a.fails++;Bus.emit('AGENT_FAILED',a?.name,{msg:e.message,task:t.id},{corr:t.corr,prio:'haute'})}
- save();render()},
-async approve(ids,mode){const ts=ids.map(i=>S.tasks.find(t=>t.id===i)).filter(Boolean);audit('Validation humaine',ts.length+' tâche(s)');
- ts.forEach(t=>{t.status='en attente';Bus.emit('TASK_ASSIGNED','orchestrateur',{task:t.id,agent:t.agent},{corr:t.corr})});
- if(mode==='parallele')await Promise.all(ts.map(t=>this.exec(t)));else for(const t of ts)await this.exec(t)}};
 
-/* ===== Workflow Engine (linéaire) ===== */
+plan(text,mode){
+text=clean(text);
+
+const w=text.toLowerCase();
+
+const act=S.agents.filter(a=>a.state==='actif');
+
+const sc=a=>
+a.caps.reduce((n,c)=>n+(w.includes(c.slice(0,5))?2:0),0)+
+a.mission.toLowerCase().split(/\W+/)
+.filter(x=>x.length>4&&w.includes(x)).length;
+
+let sel=act
+.map(a=>[a,sc(a)])
+.filter(x=>x[1]>0)
+.sort((a,b)=>b[1]-a[1])
+.map(x=>x[0])
+.slice(0,Sec.MAX_TASKS);
+
+if(!sel.length){
+sel=act.filter(a=>a.caps.includes('coordination')).slice(0,1);
+}
+
+if(!sel.length&&act.length){
+sel=[act[0]];
+}
+
+const corr=uid('co');
+let prev=null;
+
+const ts=sel.map(a=>{
+const t={
+id:uid('tk'),
+title:a.name+' : '+text.slice(0,60),
+desc:text,
+agent:a.id,
+prio:'normale',
+created:now(),
+due:'',
+status:'validation',
+deps:mode==='sequentiel'&&prev?[prev]:[],
+result:null,
+hist:[{ts:now(),s:'créée'}],
+corr,
+sensible:Sec.suspect(text)
+};
+
+prev=t.id;
+
+return t;
+});
+
+ts.forEach(t=>{
+S.tasks.unshift(t);
+Bus.emit('TASK_CREATED','orchestrateur',{id:t.id},{corr});
+});
+
+audit('Plan orchestrateur',ts.length+' tâche(s), mode '+mode);
+
+save();
+
+return ts;
+},
+
+async exec(t,tries=0){
+
+const a=S.agents.find(x=>x.id===t.agent);
+
+if(!a){
+t.status='erreur';
+t.result={erreur:'Agent introuvable.'};
+save();
+render();
+return;
+}
+
+t.status='en cours';
+t.hist.push({ts:now(),s:'démarrée'});
+
+Bus.emit('AGENT_STARTED',a.name,{task:t.id},{corr:t.corr});
+
+render();
+
+try{
+
+const r=await Runtime.run(a,t);
+
+t.result=r;
+t.status='terminée';
+
+a.runs++;
+
+t.hist.push({ts:now(),s:'terminée'});
+
+Bus.emit('TASK_COMPLETED',a.name,{task:t.id},{corr:t.corr});
+Bus.emit('AGENT_COMPLETED',a.name,{task:t.id},{corr:t.corr});
+
+}catch(e){
+
+/* PAS DE RELANCE AUTOMATIQUE GEMINI */
+
+if(
+tries<Sec.MAX_RETRY&&
+!a.model.startsWith('gemini-')&&
+!/backend/i.test(e.message)
+){
+t.hist.push({ts:now(),s:'reprise '+(tries+1)});
+return this.exec(t,tries+1);
+}
+
+t.status='erreur';
+t.result={erreur:e.message};
+a.fails++;
+
+Bus.emit('AGENT_FAILED',a.name,{
+msg:e.message,
+task:t.id
+},{corr:t.corr,prio:'haute'});
+
+}
+
+save();
+render();
+},
+
+async approve(ids,mode){
+const ts=ids.map(i=>S.tasks.find(t=>t.id===i)).filter(Boolean);
+
+audit('Validation humaine',ts.length+' tâche(s)');
+
+ts.forEach(t=>{
+t.status='en attente';
+
+Bus.emit('TASK_ASSIGNED','orchestrateur',{
+task:t.id,
+agent:t.agent
+},{corr:t.corr});
+});
+
+if(mode==='parallele'){
+await Promise.all(ts.map(t=>this.exec(t)));
+}else{
+for(const t of ts){
+await this.exec(t);
+}
+}
+}
+};
+
+/* ================= WORKFLOW ================= */
+
 const STEPS=['agent','validation humaine','délai'];
-const Flow={async run(w){const corr=uid('co');Bus.emit('WORKFLOW_STARTED','workflow',{id:w.id},{corr});const h={ts:now(),ok:true,log:[]};
- for(const s of w.steps){if(s.type==='délai'){await sleep(Math.min(+s.val||1,5)*1000);h.log.push('délai');continue}
-  if(s.type==='validation humaine'){if(!confirm('Validation requise : '+(s.val||'continuer ?'))){h.ok=false;h.log.push('refusé');break}h.log.push('validé');continue}
-  const a=S.agents.find(x=>x.id===s.val);if(!a){h.ok=false;h.log.push('agent introuvable');break}
-  const t={id:uid('tk'),title:`${w.name} → ${a.name}`,desc:w.name,agent:a.id,prio:'normale',created:now(),due:'',status:'en attente',deps:[],result:null,hist:[],corr};S.tasks.unshift(t);await Orch.exec(t);h.log.push(a.name+' : '+t.status);if(t.status==='erreur'){h.ok=false;break}}
- w.hist=[h,...(w.hist||[])].slice(0,20);Bus.emit('WORKFLOW_COMPLETED','workflow',{id:w.id,ok:h.ok},{corr});save();render()}};
 
-/* ===== Connecteurs (manifeste) ===== */
-const CONN=[['WhatsApp','Communication','https://web.whatsapp.com'],['Telegram','Communication','https://web.telegram.org'],['Discord','Communication','https://discord.com/app'],['Slack','Communication','https://slack.com'],['Gmail','Communication','https://mail.google.com'],['Outlook','Communication','https://outlook.live.com'],['Facebook','Réseaux','https://facebook.com'],['Instagram','Réseaux','https://instagram.com'],['TikTok','Réseaux','https://tiktok.com'],['LinkedIn','Réseaux','https://linkedin.com'],['YouTube','Réseaux','https://youtube.com'],['X','Réseaux','https://x.com'],['Google Calendar','Productivité','https://calendar.google.com'],['Notion','Productivité','https://notion.so'],['Trello','Productivité','https://trello.com'],['Asana','Productivité','https://asana.com'],['GitHub','Développement','https://github.com'],['GitLab','Développement','https://gitlab.com'],['API REST','Développement',''],['Webhooks','Développement',''],['Google Drive','Stockage','https://drive.google.com'],['OneDrive','Stockage','https://onedrive.live.com'],['S3 compatible','Stockage','']];
+const Flow={
+async run(w){
 
-/* ===== UI ===== */
-const MODS=[['dash','📊','Dashboard'],['agents','🤖','Agents IA'],['orch','🧭','Orchestrateur'],['flows','🔀','Workflows'],['tasks','✅','Tâches'],['conn','🔌','Connecteurs'],['comm','📡','Communications'],['kb','📚','Base de connaissances'],['mem','🧠','Mémoire'],['ana','📈','Analytics'],['hist','🕘','Historique'],['sec','🛡️','Sécurité'],['set','⚙️','Paramètres']];
+const corr=uid('co');
+
+Bus.emit('WORKFLOW_STARTED','workflow',{id:w.id},{corr});
+
+const h={
+ts:now(),
+ok:true,
+log:[]
+};
+
+for(const s of w.steps){
+
+if(s.type==='délai'){
+await sleep(Math.min(+s.val||1,5)*1000);
+h.log.push('délai');
+continue;
+}
+
+if(s.type==='validation humaine'){
+if(!confirm('Validation requise : '+(s.val||'continuer ?'))){
+h.ok=false;
+h.log.push('refusé');
+break;
+}
+
+h.log.push('validé');
+continue;
+}
+
+const a=S.agents.find(x=>x.id===s.val);
+
+if(!a){
+h.ok=false;
+h.log.push('agent introuvable');
+break;
+}
+
+const t={
+id:uid('tk'),
+title:w.name+' → '+a.name,
+desc:w.name,
+agent:a.id,
+prio:'normale',
+created:now(),
+due:'',
+status:'en attente',
+deps:[],
+result:null,
+hist:[],
+corr
+};
+
+S.tasks.unshift(t);
+
+await Orch.exec(t);
+
+h.log.push(a.name+' : '+t.status);
+
+if(t.status==='erreur'){
+h.ok=false;
+break;
+}
+}
+
+w.hist=[h,...(w.hist||[])].slice(0,20);
+
+Bus.emit('WORKFLOW_COMPLETED','workflow',{
+id:w.id,
+ok:h.ok
+},{corr});
+
+save();
+render();
+}
+};
+
+/* ================= CONNECTEURS ================= */
+
+const CONN=[
+['WhatsApp','Communication','https://web.whatsapp.com'],
+['Telegram','Communication','https://web.telegram.org'],
+['Discord','Communication','https://discord.com/app'],
+['Slack','Communication','https://slack.com'],
+['Gmail','Communication','https://mail.google.com'],
+['Outlook','Communication','https://outlook.live.com'],
+['Facebook','Réseaux','https://facebook.com'],
+['Instagram','Réseaux','https://instagram.com'],
+['TikTok','Réseaux','https://tiktok.com'],
+['LinkedIn','Réseaux','https://linkedin.com'],
+['YouTube','Réseaux','https://youtube.com'],
+['X','Réseaux','https://x.com'],
+['Google Calendar','Productivité','https://calendar.google.com'],
+['Notion','Productivité','https://notion.so'],
+['Trello','Productivité','https://trello.com'],
+['Asana','Productivité','https://asana.com'],
+['GitHub','Développement','https://github.com'],
+['GitLab','Développement','https://gitlab.com'],
+['API REST','Développement',''],
+['Webhooks','Développement',''],
+['Google Drive','Stockage','https://drive.google.com'],
+['OneDrive','Stockage','https://onedrive.live.com'],
+['S3 compatible','Stockage','']
+];
+
+/* ================= NAVIGATION ================= */
+
+const MODS=[
+['dash','📊','Dashboard'],
+['agents','🤖','Agents IA'],
+['orch','🧭','Orchestrateur'],
+['flows','🔀','Workflows'],
+['tasks','✅','Tâches'],
+['conn','🔌','Connecteurs'],
+['comm','📡','Communications'],
+['kb','📚','Base de connaissances'],
+['mem','🧠','Mémoire'],
+['ana','📈','Analytics'],
+['hist','🕘','Historique'],
+['sec','🛡️','Sécurité'],
+['set','⚙️','Paramètres']
+];
+
 let cur='dash',q='',view='liste';
+
 const nb=()=>S.tasks.filter(t=>t.status==='validation').length;
-function nav(){$('#nav').innerHTML=`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V2.3</span></h1>`+MODS.map(m=>`<button data-m="${m[0]}" class="${cur===m[0]?'on':''}" title="${m[2]}"><span>${m[1]}</span><span class="t">${m[2]}</span>${m[0]==='tasks'&&nb()?`<span class="n t">${nb()}</span>`:''}</button>`).join('');
- $('#tg').onclick=()=>$('#nav').classList.toggle('c');$('#nav').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{cur=b.dataset.m;q='';render()})}
-function dlg(title,fields,ok,init={}){const d=$('#dlg');d.innerHTML=`<form method="dialog"><h3 style="margin:0">${esc(title)}</h3>${fields.map(f=>`<label>${f.l}</label>${f.t==='select'?`<select name="${f.k}">${f.o.map(o=>`<option value="${esc(o.v??o)}" ${(o.v??o)==init[f.k]?'selected':''}>${esc(o.l??o)}</option>`).join('')}</select>`:f.t==='area'?`<textarea name="${f.k}" rows="4">${esc(init[f.k]||'')}</textarea>`:`<input name="${f.k}" value="${esc(init[f.k]||'')}" ${f.r?'required':''}>`}`).join('')}<div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn" value="x" formnovalidate>Annuler</button><button class="btn p" value="ok">Enregistrer</button></div></form>`;
- d.querySelector('form').onsubmit=e=>{if(e.submitter?.value!=='ok')return;const o={};new FormData(e.target).forEach((v,k)=>o[k]=Sec.clean(v));ok(o);save();render()};d.showModal()}
-const askDel=(m,f)=>{if(confirm(m)){f();save();render()}};
-const empty=(t,b)=>`<div class="empty">${t}${b?'<br><br>'+b:''}</div>`;
-const search=()=>`<input id="q" placeholder="Rechercher…" value="${esc(q)}" style="max-width:220px" aria-label="Rechercher">`;
-const match=o=>!q||JSON.stringify(o).toLowerCase().includes(q.toLowerCase());
-const stTag=s=>`<span class="tag ${{terminée:'ok',actif:'ok',erreur:'er',validation:'wa','en cours':'go',pause:'wa'}[s]||''}">${esc(s)}</span>`;
-const an=id=>S.agents.find(a=>a.id===id)?.name||'—';
+
+function nav(){
+$('#nav').innerHTML=
+`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V3</span></h1>`+
+MODS.map(m=>
+`<button data-m="${m[0]}" class="${cur===m[0]?'on':''}" title="${m[2]}">
+<span>${m[1]}</span><span class="t">${m[2]}</span>
+${m[0]==='tasks'&&nb()?`<span class="n t">${nb()}</span>`:''}
+</button>`
+).join('');
+
+$('#tg').onclick=()=>$('#nav').classList.toggle('c');
+
+$('#nav').querySelectorAll('[data-m]').forEach(b=>{
+b.onclick=()=>{
+cur=b.dataset.m;
+q='';
+render();
+};
+});
+}
+
+/* ================= OUTILS UI ================= */
+
+const empty=(t,b='')=>
+`<div class="empty">${t}${b?'<br><br>'+b:''}</div>`;
+
+const search=()=>
+`<input id="q" placeholder="Rechercher…" value="${esc(q)}" style="max-width:220px">`;
+
+const match=o=>
+!q||JSON.stringify(o).toLowerCase().includes(q.toLowerCase());
+
+const an=id=>
+S.agents.find(a=>a.id===id)?.name||'—';
+
+const stTag=s=>
+`<span class="tag ${
+{
+'terminée':'ok',
+'actif':'ok',
+'erreur':'er',
+'validation':'wa',
+'en cours':'go',
+'pause':'wa'
+}[s]||''
+}">${esc(s)}</span>`;
+
+function dlg(title,fields,ok,init={}){
+const d=$('#dlg');
+
+d.innerHTML=`
+<form method="dialog">
+<h3 style="margin:0">${esc(title)}</h3>
+
+${fields.map(f=>`
+<label>${esc(f.l)}</label>
+
+${f.t==='select'?
+`<select name="${f.k}">
+${f.o.map(o=>{
+const v=o.v??o;
+const l=o.l??o;
+return `<option value="${esc(v)}" ${v==init[f.k]?'selected':''}>${esc(l)}</option>`;
+}).join('')}
+</select>`
+:
+f.t==='area'?
+`<textarea name="${f.k}" rows="4">${esc(init[f.k]||'')}</textarea>`
+:
+`<input name="${f.k}" value="${esc(init[f.k]||'')}" ${f.r?'required':''}>`
+}
+`).join('')}
+
+<div class="row" style="margin-top:14px">
+<span class="sp"></span>
+<button class="btn" value="x" formnovalidate>Annuler</button>
+<button class="btn p" value="ok">Enregistrer</button>
+</div>
+</form>`;
+
+d.querySelector('form').onsubmit=e=>{
+if(e.submitter?.value!=='ok')return;
+
+const o={};
+
+new FormData(e.target).forEach((v,k)=>o[k]=clean(v));
+
+ok(o);
+
+save();
+render();
+};
+
+d.showModal();
+}
+
+const askDel=(m,f)=>{
+if(confirm(m)){
+f();
+save();
+render();
+}
+};
+
+/* ================= VUES ================= */
 
 const V={
-dash(){const T=S.tasks,c=s=>T.filter(t=>t.status===s).length,days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()-(6-i)*864e5).toDateString();return S.events.filter(e=>new Date(e.ts).toDateString()===d).length}),mx=Math.max(1,...days);
- return `<div class="cc"><h3>CENTRE DE COMMANDEMENT</h3><textarea id="cmd" rows="3" placeholder="Ex. : Analyse mes nouveaux contacts, identifie les prospects prioritaires et prépare les relances."></textarea><div class="row" style="margin-top:8px"><select id="cm" style="width:auto"><option value="sequentiel">Séquentiel</option><option value="parallele">Parallèle</option></select><span class="sp"></span><button class="btn p" id="go">Planifier</button></div><div class="mu" style="margin-top:6px">Le plan est soumis à votre validation avant toute exécution (onglet Tâches).</div></div>
- <div class="g">${[['Agents',S.agents.length],['Actifs',S.agents.filter(a=>a.state==='actif').length],['En erreur',S.agents.filter(a=>a.state==='erreur').length],['Tâches en cours',c('en cours')],['À valider',c('validation')],['Terminées',c('terminée')],['Workflows',S.workflows.filter(w=>w.on).length],['Connecteurs API réels',0]].map(x=>`<div class="card"><div class="mu">${x[0]}</div><div class="big">${x[1]}</div></div>`).join('')}</div>
- <div class="card" style="margin-top:12px"><b>Événements sur 7 jours</b><div class="bar" style="margin-top:8px">${days.map(n=>`<i style="height:${n/mx*100}%" title="${n}"></i>`).join('')}</div></div>
- <div class="card" style="margin-top:12px"><b>Alertes</b>${S.events.filter(e=>e.type==='AGENT_FAILED'||e.type==='SYSTEM_ALERT').slice(0,4).map(e=>`<div class="mu">${fmt(e.ts)} — ${esc(e.type)} ${esc(e.payload.msg||'')}</div>`).join('')||'<div class="mu">Aucune alerte.</div>'}</div>`},
-agents(){const L=S.agents.filter(match);return `<div class="top"><h2>Agents IA</h2>${search()}<button class="btn p" id="add">Nouvel agent</button></div>`+(L.length?`<div class="g">${L.map(a=>`<div class="card"><div class="row"><b>${esc(a.name)}</b><span class="sp"></span>${stTag(a.state)}</div><div class="mu">${esc(a.cat)}${a.demo?' · <span class="tag go">démo</span>':''}</div><p>${esc(a.mission)}</p><div>${a.caps.map(c=>`<span class="tag">${esc(c)}</span>`).join('')}</div><div class="mu" style="margin:6px 0">Modèle : ${esc(a.model)} · ${a.runs} exéc. · ${a.fails} échec(s)</div><div class="row"><button class="btn s" data-a="edit" data-i="${a.id}">Modifier</button><button class="btn s" data-a="dup" data-i="${a.id}">Dupliquer</button><button class="btn s" data-a="tog" data-i="${a.id}">${a.state==='actif'?'Suspendre':'Activer'}</button><button class="btn s" data-a="test" data-i="${a.id}">Tester</button><button class="btn s d" data-a="del" data-i="${a.id}">Supprimer</button></div></div>`).join('')}</div>`:empty('Aucun agent ne correspond.'))},
-orch(){return `<div class="top"><h2>Orchestrateur</h2></div><div class="card"><p>Pipeline : demande → compétences → sélection d'agents → sous-tâches → validation humaine → exécution → résultat.</p><p class="mu">Sélection par correspondance mots-clés / capacités. Limite : ${Sec.MAX_TASKS} tâches par demande, ${Sec.MAX_RETRY} reprises. Le moteur d'exécution est <b>simulé</b> tant qu'aucun fournisseur IA n'est branché via un backend.</p><textarea id="cmd" rows="3" placeholder="Votre demande…"></textarea><div class="row" style="margin-top:8px"><select id="cm" style="width:auto"><option value="sequentiel">Séquentiel</option><option value="parallele">Parallèle</option></select><span class="sp"></span><button class="btn p" id="go">Planifier</button></div></div>`},
-flows(){return `<div class="top"><h2>Workflows</h2><button class="btn p" id="add">Nouveau workflow</button></div>`+(S.workflows.length?S.workflows.map(w=>`<div class="card" style="margin-bottom:10px"><div class="row"><b>${esc(w.name)}</b>${w.on?'<span class="tag ok">actif</span>':'<span class="tag">inactif</span>'}<span class="sp"></span><button class="btn s" data-a="run" data-i="${w.id}">Exécuter</button><button class="btn s" data-a="tog" data-i="${w.id}">${w.on?'Désactiver':'Activer'}</button><button class="btn s" data-a="step" data-i="${w.id}">+ Étape</button><button class="btn s" data-a="dup" data-i="${w.id}">Dupliquer</button><button class="btn s d" data-a="del" data-i="${w.id}">Supprimer</button></div><div class="row" style="margin:10px 0">${w.steps.map(s=>`<span class="tag go">${s.type==='agent'?esc(an(s.val)):esc(s.type)+(s.val?' : '+esc(s.val):'')}</span><span class="mu">→</span>`).join('')||'<span class="mu">Aucune étape.</span>'}</div>${(w.hist||[]).slice(0,3).map(h=>`<div class="mu">${fmt(h.ts)} — ${h.ok?'réussi':'échec'} (${esc(h.log.join(', '))})</div>`).join('')}</div>`).join(''):empty('Aucun workflow. Enchaînez agents, validations humaines et délais.'))},
-tasks(){const L=S.tasks.filter(match),ST=['validation','en attente','en cours','terminée','erreur'];
- const card=t=>`<div class="card"><b>${esc(t.title)}</b><div class="mu">${esc(an(t.agent))} · ${esc(t.prio)}${t.sensible?' · <span class="tag er">contenu suspect</span>':''}</div>${t.result?`<pre>${esc(t.result.texte||t.result.erreur)}</pre>`:''}<div class="row" style="margin-top:6px">${t.status==='validation'?`<button class="btn s p" data-a="ok" data-i="${t.id}">Valider</button>`:''}${t.status==='erreur'?`<button class="btn s" data-a="retry" data-i="${t.id}">Relancer</button>`:''}<button class="btn s d" data-a="del" data-i="${t.id}">Supprimer</button></div></div>`;
- const pend=S.tasks.filter(t=>t.status==='validation');
- return `<div class="top"><h2>Tâches</h2>${search()}<select id="vw" style="width:auto"><option ${view==='liste'?'selected':''}>liste</option><option ${view==='kanban'?'selected':''}>kanban</option></select>${pend.length?`<button class="btn p" id="okall">Valider tout (${pend.length})</button>`:''}<button class="btn" id="add">Nouvelle tâche</button></div>`+(!L.length?empty('Aucune tâche. Donnez une instruction dans le Centre de commandement.'):view==='kanban'?`<div class="kan">${ST.map(s=>`<div><div class="mu">${s} (${L.filter(t=>t.status===s).length})</div>${L.filter(t=>t.status===s).map(card).join('')}</div>`).join('')}</div>`:`<div class="g" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${L.map(t=>`${card(t).replace('class="card"','class="card"')}`).join('')}</div>`)},
-conn(){return `<div class="top"><h2>Connecteurs</h2>${search()}</div><div class="card mu" style="margin-bottom:12px">Niveaux : <span class="tag">lien</span> ouverture dans un nouvel onglet · <span class="tag wa">API à configurer</span> backend requis, non intégré · <span class="tag go">démo</span> simulé. Aucun compte n'est réellement connecté par cette version.</div><div class="g">${CONN.filter(match).map(c=>{const demo=S.conn[c[0]];return `<div class="card"><b>${c[0]}</b><div class="mu">${c[1]}</div><div style="margin:6px 0">${c[2]?'<span class="tag">lien</span>':''}<span class="tag wa">API non configurée</span>${demo?'<span class="tag go">démo</span>':''}</div><div class="row">${c[2]?`<a class="btn s" href="${c[2]}" target="_blank" rel="noopener noreferrer">Ouvrir</a>`:''}<button class="btn s" data-a="demo" data-i="${c[0]}">${demo?'Désactiver démo':'Mode démo'}</button></div></div>`}).join('')}</div>`},
-comm(){return `<div class="top"><h2>Communications — Event Bus</h2><button class="btn" id="ping">Émettre SYSTEM_ALERT test</button></div>`+(S.events.length?`<div class="card l">${S.events.slice(0,40).map(e=>`<div><span class="tag go">${e.type}</span><span>${esc(e.source||'')}</span><span class="mu sp">${fmt(e.ts)} · corr ${e.corr.slice(3)} · ${e.prio}</span></div>`).join('')}</div>`:empty('Aucun événement.'))},
-kb(){const L=S.kb.filter(match);return `<div class="top"><h2>Base de connaissances</h2>${search()}<button class="btn p" id="add">Ajouter un document</button></div>`+(L.length?`<div class="g">${L.map(k=>`<div class="card"><b>${esc(k.title)}</b><div class="mu">${esc(k.tag)} · agent : ${esc(an(k.agent))}</div><pre>${esc(k.body.slice(0,200))}</pre><button class="btn s d" data-a="del" data-i="${k.id}" style="margin-top:6px">Supprimer</button></div>`).join('')}</div>`:empty('Notes, procédures et référentiels que vous rattachez aux agents.'))},
-mem(){const L=S.mem.filter(match);return `<div class="top"><h2>Mémoire des agents</h2>${search()}<button class="btn p" id="add">Ajouter</button><button class="btn" id="purge">Purger expirées</button></div><div class="mu" style="margin-bottom:8px">Rétention : ${S.cfg.retention} jours (modifiable dans Paramètres).</div>`+(L.length?`<div class="card l">${L.map(m=>`<div><b>${esc(an(m.agent))}</b><span class="tag">${m.scope}</span><span class="sp">${esc(m.text)}</span><button class="btn s d" data-a="del" data-i="${m.id}">Effacer</button></div>`).join('')}</div>`:empty('Aucune mémoire enregistrée.'))},
-ana(){const T=S.tasks,ok=T.filter(t=>t.status==='terminée').length,ko=T.filter(t=>t.status==='erreur').length;return `<div class="top"><h2>Analytics</h2></div><div class="g"><div class="card"><div class="mu">Exécutions</div><div class="big">${ok+ko}</div></div><div class="card"><div class="mu">Taux de réussite</div><div class="big">${ok+ko?Math.round(ok/(ok+ko)*100)+'%':'—'}</div></div><div class="card"><div class="mu">Erreurs</div><div class="big">${ko}</div></div></div><div class="card" style="margin-top:12px"><b>Par agent</b>${S.agents.map(a=>`<div class="row"><span style="width:140px">${esc(a.name)}</span><span>${a.runs} réussite(s), ${a.fails} échec(s)</span></div>`).join('')}</div><p class="mu">Données réelles du Hub local. Coûts et tokens : indisponibles sans fournisseur configuré.</p>`},
-hist(){return `<div class="top"><h2>Historique</h2></div>`+(S.tasks.length?`<div class="card l">${S.tasks.slice(0,60).map(t=>`<div><b>${esc(t.title)}</b>${stTag(t.status)}<span class="mu sp">${t.hist.map(h=>h.s).join(' → ')}</span></div>`).join('')}</div>`:empty('Rien à afficher.'))},
-sec(){return `<div class="top"><h2>Sécurité</h2></div><div class="card"><ul><li>Entrées nettoyées (balises retirées), échappement HTML systématique.</li><li>Validation humaine obligatoire avant exécution des tâches de l'orchestrateur.</li><li>Limites : ${Sec.MAX_TASKS} tâches/demande, ${Sec.MAX_RETRY} reprises, pas de boucle inter-agents.</li><li>Aucune clé API stockée : les intégrations réelles exigent un backend avec gestion de secrets.</li></ul></div><div class="card" style="margin-top:12px"><b>Journal d'audit</b><div class="l">${S.audit.slice(0,30).map(a=>`<div><span class="mu">${fmt(a.ts)}</span><span>${esc(a.a)} — ${esc(a.d)}</span></div>`).join('')||'<div class="mu">Vide.</div>'}</div></div>`},
-set(){return `<div class="top"><h2>Paramètres</h2></div><div class="card"><h3>Connexion Supabase</h3><p class="mu">La clé Publishable est publique par conception. N'utilisez jamais une clé Secret/service_role dans le navigateur.</p><label class="mu">Project URL</label><input id="sburl" placeholder="https://xxxxx.supabase.co" value="${esc(S.cfg.sburl||'')}"><label class="mu" style="display:block;margin-top:8px">Publishable key</label><input id="sbkey" placeholder="sb_publishable_..." value="${esc(S.cfg.sbkey||'')}"><div class="row" style="margin-top:8px"><button class="btn" id="sbSave">Enregistrer la configuration</button><button class="btn" id="sbTest">Tester</button></div><hr><label class="mu">E-mail</label><input id="sbemail" type="email" placeholder="votre@email.com"><label class="mu" style="display:block;margin-top:8px">Mot de passe</label><input id="sbpass" type="password" placeholder="Mot de passe"><div class="row" style="margin-top:8px"><button class="btn p" id="sbSign">Créer un compte</button><button class="btn" id="sbLogin">Connexion</button><button class="btn" id="sbLogout">Déconnexion</button></div><div class="mu" id="sbStatus">${SB.session?.user?.email?'Connecté : '+esc(SB.session.user.email):'Session non connectée'}</div><hr><div class="row"><button class="btn" id="sbPush">Envoyer mes agents vers Supabase</button><button class="btn" id="sbPull">Importer mes agents depuis Supabase</button></div><p class="mu">La synchronisation concerne les agents. Les tâches, mémoires et workflows seront raccordés dans une étape suivante. La session est conservée sur cet appareil dans IndexedDB et renouvelée si possible. Utilisez Déconnexion sur un appareil partagé.</p></div><div class="card"><label class="mu">Thème</label><select id="th">${['auto','light','dark'].map(t=>`<option ${S.cfg.theme===t?'selected':''}>${t}</option>`).join('')}</select><label class="mu" style="display:block;margin-top:10px">Rétention mémoire (jours)</label><input id="ret" type="number" min="1" value="${S.cfg.retention}"></div><div class="card row" style="margin-top:12px"><button class="btn" id="exp">Exporter JSON</button><label class="btn">Importer JSON<input id="imp" type="file" accept=".json" hidden></label><button class="btn" id="leg">Importer Hub V1 (localStorage)</button><button class="btn d" id="rst">Réinitialiser</button></div><p class="mu">Version ${VER} · stockage IndexedDB local${Persist.db?'':' (indisponible : données non persistées)'}.</p>`}};
 
-// Supabase REST/Auth bridge — session persisted in IndexedDB; no secret/service-role key.
-const SB={session:null,
- config(){return {url:(S.cfg.sburl||'').trim().replace(/\/$/,''),key:(S.cfg.sbkey||'').trim()}},
- setSession(data){this.session=data||null;S.cfg.sbSession=this.session?{access_token:this.session.access_token,refresh_token:this.session.refresh_token,token_type:this.session.token_type||'bearer',expires_at:this.session.expires_at||(this.session.expires_in?Math.floor(Date.now()/1000)+this.session.expires_in:null),user:this.session.user}:null;save()},
- headers(extra={}){const c=this.config();return {'apikey':c.key,'Authorization':'Bearer '+(this.session?.access_token||c.key),'Content-Type':'application/json','Accept':'application/json',...extra}},
- async request(path,opts={}){const c=this.config();if(!c.url||!c.key)throw new Error('Enregistrez d’abord Project URL et Publishable key.');let r;try{r=await fetch(c.url+path,{...opts,headers:this.headers(opts.headers||{})})}catch(e){throw new Error('Réseau/CORS : '+(e.message||'requête impossible'))}const raw=await r.text();let body=null;try{body=raw?JSON.parse(raw):null}catch{body=raw}if(!r.ok){const msg=body?.message||body?.msg||body?.error_description||body?.details||body?.hint||(typeof body==='string'?body:'HTTP '+r.status);throw new Error(`HTTP ${r.status} — ${msg}`)}return body},
- async test(){const rows=await this.request('/rest/v1/agents?select=id,owner_id,name&limit=1');return {ok:true,rows:Array.isArray(rows)?rows.length:0}},
- async auth(type,email,password){if(!email||!password)throw new Error('Saisissez votre e-mail et votre mot de passe.');const path=type==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password';const data=await this.request(path,{method:'POST',body:JSON.stringify({email,password})});if(data.access_token&&data.refresh_token)this.setSession(data);return data},
- async restore(){const saved=S.cfg.sbSession;if(!saved?.access_token||!saved?.refresh_token)return false;this.session=saved;const exp=Number(saved.expires_at||0);if(exp&&exp<Date.now()/1000+60){try{const d=await this.request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:saved.refresh_token})});if(d.access_token)this.setSession(d);else throw new Error('Jeton renouvelé absent')}catch(e){this.session=null;S.cfg.sbSession=null;save();return false}}return !!this.session?.access_token},
- logout(){this.session=null;S.cfg.sbSession=null;save()},
- async upsertAgent(a){if(!this.session?.user?.id)throw new Error('Connectez-vous à Supabase avant la synchronisation.');const id=uuidLike(a);const row={id,owner_id:this.session.user.id,name:a.name,description:a.mission||'',system_prompt:a.instr||'',model_provider:'demo',model_name:a.model||'local-simulated',status:a.state==='actif'?'active':a.state==='pause'?'paused':'draft',capabilities:a.caps||[],permissions:a.perms||{},config:{category:a.cat||'Agent personnalisé',local_id:a.id},version:1};await this.request('/rest/v1/agents?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});a.supabase_id=id;save();return id},
- async push(){if(!this.session?.user?.id)throw new Error('Connectez-vous d’abord.');let n=0;for(const a of S.agents){await this.upsertAgent(a);n++}return n},
- async pull(){if(!this.session?.user?.id)throw new Error('Connectez-vous d’abord.');const ownerId=this.session.user.id;const rows=await this.request('/rest/v1/agents?select=*&owner_id=eq.'+encodeURIComponent(ownerId)+'&order=updated_at.desc');for(const r of rows){const localId=r.config?.local_id;let existing=localId?S.agents.find(a=>a.id===localId):S.agents.find(a=>a.supabase_id===r.id);const mapped={id:existing?.id||localId||r.id,supabase_id:r.id,name:r.name,cat:r.config?.category||'Agent personnalisé',mission:r.description||'',instr:r.system_prompt||'',model:r.model_name||MODELS[0],caps:Array.isArray(r.capabilities)?r.capabilities:[],tools:[],perms:r.permissions||{},state:r.status==='active'?'actif':r.status==='paused'?'pause':'pause',created:r.created_at||now(),runs:existing?.runs||0,fails:existing?.fails||0,demo:0};if(existing)Object.assign(existing,mapped);else S.agents.push(mapped)}save();render();return rows.length}};
-function uuidLike(agent){if(agent.supabase_id&&/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(agent.supabase_id))return agent.supabase_id;if(!agent.supabase_id)agent.supabase_id=crypto.randomUUID();return agent.supabase_id}
+dash(){
+const T=S.tasks;
+const c=s=>T.filter(t=>t.status===s).length;
 
-function bind(){const m=$('#main'),$$=s=>m.querySelectorAll(s),on=(s,f)=>{const e=m.querySelector(s);if(e)e.onclick=f};
- const qi=$('#q');if(qi){qi.oninput=()=>{q=qi.value;const p=qi.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)}}
- on('#go',()=>{const t=$('#cmd').value.trim();if(!t)return toast('Saisissez une instruction.');const r=Orch.plan(t,$('#cm').value);if(Sec.suspect(t))Bus.emit('SYSTEM_ALERT','sécurité',{msg:'Instruction suspecte signalée'});toast(r.length+' tâche(s) à valider');cur='tasks';render()});
- const aid=(b)=>b.dataset.i;
- $$('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a,i=aid(b);
-  if(cur==='agents'){const g=S.agents.find(x=>x.id===i);
-   if(a==='edit')agentForm(g);if(a==='dup'){S.agents.push({...g,id:uid('ag'),name:g.name+' (copie)',runs:0,fails:0,created:now()});save();render()}
-   if(a==='tog'){g.state=g.state==='actif'?'pause':'actif';audit('Agent '+g.state,g.name);Bus.emit('AGENT_CREATED','ui',{name:g.name});save();render()}
-   if(a==='test'){const t={id:uid('tk'),title:'Test '+g.name,desc:'test',agent:g.id,prio:'normale',created:now(),due:'',status:'en attente',deps:[],result:null,hist:[],corr:uid('co')};S.tasks.unshift(t);Orch.exec(t).then(()=>toast('Test : '+t.status))}
-   if(a==='del')askDel('Supprimer '+g.name+' ?',()=>{S.agents=S.agents.filter(x=>x!==g);audit('Agent supprimé',g.name)})}
-  else if(cur==='tasks'){if(a==='ok')Orch.approve([i],'sequentiel');if(a==='retry')Orch.exec(S.tasks.find(t=>t.id===i));if(a==='del')askDel('Supprimer cette tâche ?',()=>S.tasks=S.tasks.filter(t=>t.id!==i))}
-  else if(cur==='flows'){const w=S.workflows.find(x=>x.id===i);
-   if(a==='run')Flow.run(w);if(a==='tog'){w.on=!w.on;save();render()}if(a==='dup'){S.workflows.push({...w,id:uid('wf'),name:w.name+' (copie)',hist:[]});save();render()}
-   if(a==='step')dlg('Ajouter une étape',[{k:'type',l:'Type',t:'select',o:STEPS},{k:'val',l:'Agent (id), message de validation ou secondes',t:'select',o:[{v:'',l:'—'},...S.agents.map(g=>({v:g.id,l:g.name}))]}],o=>w.steps.push({type:o.type,val:o.val}));
-   if(a==='del')askDel('Supprimer ce workflow ?',()=>S.workflows=S.workflows.filter(x=>x!==w))}
-  else if(cur==='conn'){S.conn[i]=!S.conn[i];audit('Connecteur démo',i+' '+(S.conn[i]?'activé':'désactivé'));Bus.emit(S.conn[i]?'CONNECTOR_CONNECTED':'CONNECTOR_DISCONNECTED','connecteurs',{name:i,simule:true});render()}
-  else if(cur==='kb'&&a==='del')askDel('Supprimer ?',()=>S.kb=S.kb.filter(x=>x.id!==i));
-  else if(cur==='mem'&&a==='del')askDel('Effacer cette mémoire ?',()=>S.mem=S.mem.filter(x=>x.id!==i))});
- on('#add',()=>{const ag=[{v:'',l:'—'},...S.agents.map(g=>({v:g.id,l:g.name}))];
-  if(cur==='agents')agentForm();
-  if(cur==='flows')dlg('Nouveau workflow',[{k:'name',l:'Nom',r:1}],o=>S.workflows.push({id:uid('wf'),name:o.name,steps:[],on:false,hist:[]}));
-  if(cur==='tasks')dlg('Nouvelle tâche',[{k:'title',l:'Titre',r:1},{k:'agent',l:'Agent',t:'select',o:ag.slice(1).map(a=>({v:a.v,l:a.l}))},{k:'prio',l:'Priorité',t:'select',o:['basse','normale','haute']}],o=>S.tasks.unshift({id:uid('tk'),title:o.title,desc:o.title,agent:o.agent,prio:o.prio,created:now(),due:'',status:'validation',deps:[],result:null,hist:[{ts:now(),s:'créée'}],corr:uid('co')}));
-  if(cur==='kb')dlg('Document',[{k:'title',l:'Titre',r:1},{k:'tag',l:'Catégorie'},{k:'agent',l:'Rattaché à',t:'select',o:ag},{k:'body',l:'Contenu',t:'area'}],o=>S.kb.push({id:uid('kb'),...o}));
-  if(cur==='mem')dlg('Mémoire',[{k:'agent',l:'Agent',t:'select',o:ag.slice(1)},{k:'scope',l:'Portée',t:'select',o:['privée','partagée']},{k:'text',l:'Contenu',t:'area'}],o=>S.mem.push({id:uid('mm'),ts:now(),...o}))});
- on('#okall',()=>Orch.approve(S.tasks.filter(t=>t.status==='validation').map(t=>t.id),'sequentiel'));
- const vw=$('#vw');if(vw)vw.onchange=()=>{view=vw.value;render()};
- on('#ping',()=>{Bus.emit('SYSTEM_ALERT','ui',{msg:'Test manuel'},{prio:'haute'});render()});
- on('#purge',()=>{const lim=Date.now()-S.cfg.retention*864e5,n=S.mem.length;S.mem=S.mem.filter(x=>new Date(x.ts)>lim);toast((n-S.mem.length)+' supprimée(s)');save();render()});
- const sburl=$('#sburl'),sbkey=$('#sbkey');if(sburl)sburl.onchange=()=>S.cfg.sburl=sburl.value;if(sbkey)sbkey.onchange=()=>S.cfg.sbkey=sbkey.value;
- on('#sbSave',()=>{S.cfg.sburl=sburl.value.trim();S.cfg.sbkey=sbkey.value.trim();save();toast('Configuration Supabase enregistrée sur cet appareil')});
- on('#sbTest',async()=>{try{S.cfg.sburl=sburl.value.trim();S.cfg.sbkey=sbkey.value.trim();save();const r=await SB.test();toast('REST OK — '+r.rows+' ligne(s) visible(s). '+(SB.session?'Session authentifiée.':'Connectez-vous pour écrire.'))}catch(e){toast('Test Supabase : '+e.message)}});
- on('#sbSign',async()=>{try{S.cfg.sburl=sburl.value.trim();S.cfg.sbkey=sbkey.value.trim();save();const d=await SB.auth('signup',$('#sbemail').value,$('#sbpass').value);$('#sbStatus').textContent=d.access_token?'Compte créé et connecté : '+(d.user?.email||''):'Compte créé. Confirmez l’e-mail, puis utilisez Connexion.';toast(d.access_token?'Inscription et connexion réussies':'Inscription envoyée — confirmation e-mail requise')}catch(e){$('#sbStatus').textContent='Inscription échouée : '+e.message;toast('Inscription : '+e.message)}});
- on('#sbLogin',async()=>{try{S.cfg.sburl=sburl.value.trim();S.cfg.sbkey=sbkey.value.trim();save();const d=await SB.auth('login',$('#sbemail').value,$('#sbpass').value);$('#sbStatus').textContent='Connecté : '+(d.user?.email||'utilisateur');toast('Connexion Supabase réussie');render()}catch(e){$('#sbStatus').textContent='Connexion échouée : '+e.message;toast('Connexion : '+e.message)}});
- on('#sbLogout',()=>{SB.logout();$('#sbStatus').textContent='Session déconnectée';toast('Session Supabase déconnectée')});
- on('#sbPush',async()=>{try{S.cfg.sburl=sburl.value.trim();S.cfg.sbkey=sbkey.value.trim();save();const n=await SB.push();toast(n+' agent(s) synchronisé(s) vers Supabase')}catch(e){toast('Échec synchronisation : '+e.message)}});
- on('#sbPull',async()=>{try{S.cfg.sburl=sburl.value.trim();S.cfg.sbkey=sbkey.value.trim();save();const n=await SB.pull();toast(n+' agent(s) importés depuis Supabase')}catch(e){toast('Échec import : '+e.message)}});
- const th=$('#th');if(th)th.onchange=()=>{S.cfg.theme=th.value;theme();save()};
- const rt=$('#ret');if(rt)rt.onchange=()=>{S.cfg.retention=Math.max(1,+rt.value||90);save()};
- on('#exp',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='hub_v2_3_sauvegarde.json';a.click()});
- const im=$('#imp');if(im)im.onchange=async()=>{try{migrate(JSON.parse(await im.files[0].text()));save();toast('Sauvegarde restaurée');render()}catch{toast('Fichier invalide')}};
- on('#leg',()=>{const n=importLegacy();toast(n?n+' agent(s) importé(s)':'Aucune donnée V1 trouvée sur ce navigateur');save();render()});
- on('#rst',()=>askDel('Tout effacer ?',()=>{S=defaults()}))}
-function agentForm(g){dlg(g?'Modifier l\'agent':'Nouvel agent',[{k:'name',l:'Nom',r:1},{k:'cat',l:'Catégorie',t:'select',o:S.cats},{k:'mission',l:'Mission',t:'area'},{k:'instr',l:'Instructions système',t:'area'},{k:'caps',l:'Capacités (séparées par des virgules : '+CAPS.join(', ')+' )'},{k:'model',l:'Modèle',t:'select',o:MODELS}],o=>{const caps=o.caps.split(',').map(s=>s.trim()).filter(Boolean);let a;if(g){Object.assign(g,{name:o.name,cat:o.cat,mission:o.mission,instr:o.instr,caps,model:o.model});a=g}else{a={...mkAgent(o.name,o.cat,o.mission,caps,0),instr:o.instr,model:o.model};S.agents.push(a);Bus.emit('AGENT_CREATED','ui',{name:o.name})}save();if(SB.session?.user?.id){SB.upsertAgent(a).then(()=>toast('Agent enregistré localement et synchronisé avec Supabase')).catch(e=>toast('Agent local créé, sync Supabase échouée : '+e.message))}else toast('Agent enregistré localement. Connectez-vous puis utilisez « Envoyer mes agents vers Supabase ».')},g?{...g,caps:g.caps.join(', ')}:{})}
+const days=[...Array(7)].map((_,i)=>{
+const d=new Date(Date.now()-(6-i)*864e5).toDateString();
+return S.events.filter(e=>new Date(e.ts).toDateString()===d).length;
+});
 
-function side(){const s=$('#side');s.innerHTML=`<b>Activité récente</b>${S.events.slice(0,12).map(e=>`<div class="mu" style="margin-top:6px">${fmt(e.ts)} · ${e.type}</div>`).join('')||'<div class="mu">Aucune.</div>'}<p class="mu">Raccourcis : / recherche · g puis d Dashboard</p>`}
-function theme(){const t=S.cfg.theme;if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.dataset.theme=t}
-function render(){nav();$('#main').innerHTML=`<div class="row" style="justify-content:flex-end;margin-bottom:-8px"><button class="btn s" id="sd">Panneau</button></div>`+V[cur]();$('#sd').onclick=()=>{$('#side').classList.toggle('h');side()};side();bind()}
-document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;if(e.key==='/'){e.preventDefault();($('#q')||{focus(){}}).focus()}});
-(async()=>{await Persist.init();const d=await Persist.load();if(d)migrate(d);else{const n=importLegacy();if(n)toast(n+' agent(s) migrés depuis Hub V1')}await SB.restore();theme();render()})();
-</script></body></html>
+const mx=Math.max(1,...days);
+
+return`
+<div class="cc">
+<h3>CENTRE DE COMMANDEMENT</h3>
+
+<textarea id="cmd" rows="3" placeholder="Ex. : Analyse mon idée de business et prépare un plan d'action marketing."></textarea>
+
+<div class="row" style="margin-top:8px">
+<select id="cm" style="width:auto">
+<option value="sequentiel">Séquentiel</option>
+<option value="parallele">Parallèle</option>
+</select>
+<span class="sp"></span>
+<button class="btn p" id="go">Planifier</button>
+</div>
+
+<div class="mu" style="margin-top:6px">
+Les tâches sont soumises à validation avant exécution.
+</div>
+</div>
+
+<div class="g">
+${[
+['Agents',S.agents.length],
+['Actifs',S.agents.filter(a=>a.state==='actif').length],
+['En erreur',S.agents.filter(a=>a.state==='erreur').length],
+['Tâches en cours',c('en cours')],
+['À valider',c('validation')],
+['Terminées',c('terminée')],
+['Workflows actifs',S.workflows.filter(w=>w.on).length],
+['Gateway IA',SB.session?'Connecté':'Déconnecté']
+].map(x=>`
+<div class="card">
+<div class="mu">${x[0]}</div>
+<div class="big">${x[1]}</div>
+</div>
+`).join('')}
+</div>
+
+<div class="card" style="margin-top:12px">
+<b>Événements sur 7 jours</b>
+<div class="bar" style="margin-top:8px">
+${days.map(n=>`<i style="height:${n/mx*100}%" title="${n}"></i>`).join('')}
+</div>
+</div>
+
+<div class="card" style="margin-top:12px">
+<b>Alertes</b>
+${S.events.filter(e=>e.type==='AGENT_FAILED'||e.type==='SYSTEM_ALERT').slice(0,4).map(e=>`
+<div class="mu">${fmt(e.ts)} — ${esc(e.type)} ${esc(e.payload.msg||'')}</div>
+`).join('')||'<div class="mu">Aucune alerte.</div>'}
+</div>
+`;
+},
+
+agents(){
+const L=S.agents.filter(match);
+
+return`
+<div class="top">
+<h2>Agents IA</h2>
+${search()}
+<button class="btn p" id="add">Nouvel agent</button>
+</div>
+
+${L.length?
+`<div class="g">
+${L.map(a=>`
+<div class="card">
+<div class="row">
+<b>${esc(a.name)}</b>
+<span class="sp"></span>
+${stTag(a.state)}
+</div>
+
+<div class="mu">${esc(a.cat)} ${a.demo?'<span class="tag go">démo</span>':''}</div>
+
+<p>${esc(a.mission)}</p>
+
+<div>
+${a.caps.map(c=>`<span class="tag">${esc(c)}</span>`).join('')}
+</div>
+
+<div class="mu" style="margin:6px 0">
+Modèle : ${esc(a.model)} · ${a.runs} exéc. · ${a.fails} échec(s)
+</div>
+
+<div class="row">
+<button class="btn s" data-a="edit" data-i="${a.id}">Modifier</button>
+<button class="btn s" data-a="dup" data-i="${a.id}">Dupliquer</button>
+<button class="btn s" data-a="tog" data-i="${a.id}">${a.state==='actif'?'Suspendre':'Activer'}</button>
+<button class="btn s" data-a="test" data-i="${a.id}">Tester</button>
+<button class="btn s d" data-a="del" data-i="${a.id}">Supprimer</button>
+</div>
+</div>
+`).join('')}
+</div>`
+:empty('Aucun agent ne correspond.')
+}
+,
+
+orch(){
+return`
+<div class="top"><h2>Orchestrateur</h2></div>
+
+<div class="card">
+<p>
+Pipeline : demande → compétences → sélection d'agents →
+sous-tâches → validation humaine → exécution → résultat.
+</p>
+
+<p class="mu">
+Sélection par correspondance entre mots-clés, capacités et missions.
+Maximum ${Sec.MAX_TASKS} tâches par demande.
+</p>
+
+<textarea id="cmd" rows="3" placeholder="Votre demande…"></textarea>
+
+<div class="row" style="margin-top:8px">
+<select id="cm" style="width:auto">
+<option value="sequentiel">Séquentiel</option>
+<option value="parallele">Parallèle</option>
+</select>
+<span class="sp"></span>
+<button class="btn p" id="go">Planifier</button>
+</div>
+</div>
+`;
+},
+
+flows(){
+return`
+<div class="top">
+<h2>Workflows</h2>
+<button class="btn p" id="add">Nouveau workflow</button>
+</div>
+
+${S.workflows.length?
+S.workflows.map(w=>`
+<div class="card" style="margin-bottom:10px">
+<div class="row">
+<b>${esc(w.name)}</b>
+${w.on?'<span class="tag ok">actif</span>':'<span class="tag">inactif</span>'}
+<span class="sp"></span>
+<button class="btn s" data-a="run" data-i="${w.id}">Exécuter</button>
+<button class="btn s" data-a="tog" data-i="${w.id}">${w.on?'Désactiver':'Activer'}</button>
+<button class="btn s" data-a="step" data-i="${w.id}">+ Étape</button>
+<button class="btn s" data-a="dup" data-i="${w.id}">Dupliquer</button>
+<button class="btn s d" data-a="del" data-i="${w.id}">Supprimer</button>
+</div>
+
+<div class="row" style="margin:10px 0">
+${w.steps.map(s=>`
+<span class="tag go">${s.type==='agent'?esc(an(s.val)):esc(s.type)}</span>
+<span class="mu">→</span>
+`).join('')||'<span class="mu">Aucune étape.</span>'}
+</div>
+
+${(w.hist||[]).slice(0,3).map(h=>`
+<div class="mu">${fmt(h.ts)} — ${h.ok?'réussi':'échec'} (${esc(h.log.join(', '))})</div>
+`).join('')}
+</div>
+`).join('')
+:empty('Aucun workflow. Enchaînez agents, validations et délais.')}
+`;
+},
+
+tasks(){
+const L=S.tasks.filter(match);
+const ST=['validation','en attente','en cours','terminée','erreur'];
+
+const card=t=>`
+<div class="card">
+<b>${esc(t.title)}</b>
+<div class="mu">${esc(an(t.agent))} · ${esc(t.prio)}
+${t.sensible?' · <span class="tag er">contenu suspect</span>':''}
+</div>
+
+${t.result?`
+<div style="margin-top:10px">
+<div class="mu">
+${t.result.simule?'⚠️ Résultat simulé':'🧠 Réponse IA réelle'}
+${t.result.model?' · '+esc(t.result.model):''}
+</div>
+
+<pre style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;max-height:450px;overflow:auto">${esc(t.result.texte||t.result.erreur||'')}</pre>
+${t.result.usage?`<div class="mu">Tokens : ${t.result.usage.totalTokenCount||'—'}</div>`:''}
+</div>
+`:''}
+
+${t.status==='validation'?`
+<button class="btn s p" data-a="ok" data-i="${t.id}">Valider</button>
+`:''}
+
+${t.status==='erreur'?`
+<button class="btn s" data-a="retry" data-i="${t.id}">Relancer</button>
+`:''}
+
+<button class="btn s d" data-a="del" data-i="${t.id}">Supprimer</button>
+</div>
+`;
+
+const pend=S.tasks.filter(t=>t.status==='validation');
+
+return`
+<div class="top">
+<h2>Tâches</h2>
+${search()}
+<select id="vw" style="width:auto">
+<option value="liste" ${view==='liste'?'selected':''}>Liste</option>
+<option value="kanban" ${view==='kanban'?'selected':''}>Kanban</option>
+</select>
+${pend.length?`<button class="btn p" id="okall">Valider tout (${pend.length})</button>`:''}
+<button class="btn" id="add">Nouvelle tâche</button>
+</div>
+
+${!L.length?
+empty('Aucune tâche.')
+:
+view==='kanban'?
+`<div class="kan">
+${ST.map(s=>`
+<div>
+<div class="mu">${s} (${L.filter(t=>t.status===s).length})</div>
+${L.filter(t=>t.status===s).map(card).join('')}
+</div>
+`).join('')}
+</div>`
+:
+`<div class="g" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+${L.map(card).join('')}
+</div>`
+}
+`;
+},
+
+conn(){
+return`
+<div class="top">
+<h2>Connecteurs</h2>
+${search()}
+</div>
+
+<div class="card mu" style="margin-bottom:12px">
+Liens d'accès et modes démo. Les connexions API réelles nécessitent une intégration backend.
+</div>
+
+<div class="g">
+${CONN.filter(match).map(c=>`
+<div class="card">
+<b>${esc(c[0])}</b>
+<div class="mu">${esc(c[1])}</div>
+
+<div style="margin:6px 0">
+${c[2]?'<span class="tag">Lien</span>':''}
+<span class="tag wa">API non configurée</span>
+${S.conn[c[0]]?'<span class="tag go">démo</span>':''}
+</div>
+
+<div class="row">
+${c[2]?`<a class="btn s" href="${c[2]}" target="_blank" rel="noopener noreferrer">Ouvrir</a>`:''}
+<button class="btn s" data-a="demo" data-i="${esc(c[0])}">
+${S.conn[c[0]]?'Désactiver démo':'Mode démo'}
+</button>
+</div>
+</div>
+`).join('')}
+</div>
+`;
+},
+
+comm(){
+return`
+<div class="top">
+<h2>Communications — Event Bus</h2>
+<button class="btn" id="ping">Émettre SYSTEM_ALERT test</button>
+</div>
+
+${S.events.length?
+`<div class="card l">
+${S.events.slice(0,40).map(e=>`
+<div>
+<span class="tag go">${esc(e.type)}</span>
+<span>${esc(e.source||'')}</span>
+<span class="mu sp">${fmt(e.ts)} · ${esc(e.corr)} · ${esc(e.prio)}</span>
+</div>
+`).join('')}
+</div>`
+:empty('Aucun événement.')}
+`;
+},
+
+kb(){
+const L=S.kb.filter(match);
+
+return`
+<div class="top">
+<h2>Base de connaissances</h2>
+${search()}
+<button class="btn p" id="add">Ajouter un document</button>
+</div>
+
+${L.length?
+`<div class="g">
+${L.map(k=>`
+<div class="card">
+<b>${esc(k.title)}</b>
+<div class="mu">${esc(k.tag)} · Agent : ${esc(an(k.agent))}</div>
+<pre style="margin-top:8px">${esc(k.body.slice(0,200))}</pre>
+<button class="btn s d" data-a="del" data-i="${k.id}">Supprimer</button>
+</div>
+`).join('')}
+</div>`
+:empty('Notes, procédures et référentiels.')}
+`;
+},
+
+mem(){
+const L=S.mem.filter(match);
+
+return`
+<div class="top">
+<h2>Mémoire des agents</h2>
+${search()}
+<button class="btn p" id="add">Ajouter</button>
+<button class="btn" id="purge">Purger expirées</button>
+</div>
+
+<div class="mu" style="margin-bottom:8px">Rétention : ${S.cfg.retention} jours</div>
+
+${L.length?
+`<div class="card l">
+${L.map(m=>`
+<div>
+<b>${esc(an(m.agent))}</b>
+<span class="tag">${esc(m.scope)}</span>
+<span class="sp">${esc(m.text)}</span>
+<button class="btn s d" data-a="del" data-i="${m.id}">Effacer</button>
+</div>
+`).join('')}
+</div>`
+:empty('Aucune mémoire enregistrée.')}
+`;
+},
+
+ana(){
+const T=S.tasks;
+const ok=T.filter(t=>t.status==='terminée').length;
+const ko=T.filter(t=>t.status==='erreur').length;
+
+return`
+<div class="top"><h2>Analytics</h2></div>
+
+<div class="g">
+<div class="card"><div class="mu">Exécutions</div><div class="big">${ok+ko}</div></div>
+<div class="card"><div class="mu">Taux de réussite</div><div class="big">${ok+ko?Math.round(ok/(ok+ko)*100)+'%':'—'}</div></div>
+<div class="card"><div class="mu">Erreurs</div><div class="big">${ko}</div></div>
+</div>
+
+<div class="card" style="margin-top:12px">
+<b>Par agent</b>
+
+${S.agents.map(a=>`
+<div class="row">
+<span style="width:140px">${esc(a.name)}</span>
+<span>${a.runs} réussite(s), ${a.fails} échec(s)</span>
+</div>
+`).join('')}
+</div>
+
+<p class="mu">Les coûts et tokens dépendent du fournisseur IA.</p>
+`;
+},
+
+hist(){
+return`
+<div class="top"><h2>Historique</h2></div>
+
+${S.tasks.length?
+`<div class="card l">
+${S.tasks.slice(0,60).map(t=>`
+<div>
+<b>${esc(t.title)}</b>
+${stTag(t.status)}
+<span class="mu sp">${t.hist.map(h=>esc(h.s)).join(' → ')}</span>
+</div>
+`).join('')}
+</div>`
+:empty('Rien à afficher.')}
+`;
+},
+
+sec(){
+return`
+<div class="top"><h2>Sécurité</h2></div>
+
+<div class="card">
+<ul>
+<li>Entrées nettoyées.</li>
+<li>Échappement HTML des données affichées.</li>
+<li>Validation humaine des tâches de l'orchestrateur.</li>
+<li>Maximum ${Sec.MAX_TASKS} tâches par demande.</li>
+<li>Pas de clé Gemini dans le HTML.</li>
+<li>Les secrets restent dans Supabase Edge Function Secrets.</li>
+<li>Les connecteurs externes ne sont pas encore autorisés à agir.</li>
+</ul>
+</div>
+
+<div class="card" style="margin-top:12px">
+<b>Journal d'audit</b>
+<div class="l">
+${S.audit.slice(0,30).map(a=>`
+<div>
+<span class="mu">${fmt(a.ts)}</span>
+<span>${esc(a.a)} — ${esc(a.d)}</span>
+</div>
+`).join('')||'<div class="mu">Vide.</div>'}
+</div>
+</div>
+`;
+},
+
+set(){
+return`
+<div class="top"><h2>Paramètres</h2></div>
+
+<div class="card">
+<h3>Connexion Supabase</h3>
+
+<p class="mu">
+Utilisez votre URL de projet et votre clé Publishable.
+N'utilisez jamais une clé Secret ou service_role dans le navigateur.
+</p>
+
+<label class="mu">Project URL</label>
+<input id="sburl" placeholder="https://xxxxx.supabase.co" value="${esc(S.cfg.sburl)}">
+
+<label class="mu" style="display:block;margin-top:8px">Publishable key / anon</label>
+<input id="sbkey" placeholder="sb_publishable_..." value="${esc(S.cfg.sbkey)}">
+
+<div class="row" style="margin-top:8px">
+<button class="btn" id="sbSave">Enregistrer</button>
+<button class="btn" id="sbTest">Tester</button>
+</div>
+
+<hr>
+
+<label class="mu">E-mail</label>
+<input id="sbemail" type="email" placeholder="votre@email.com">
+
+<label class="mu" style="display:block;margin-top:8px">Mot de passe</label>
+<input id="sbpass" type="password" placeholder="Mot de passe">
+
+<div class="row" style="margin-top:8px">
+<button class="btn p" id="sbSign">Créer un compte</button>
+<button class="btn" id="sbLogin">Connexion</button>
+<button class="btn" id="sbLogout">Déconnexion</button>
+</div>
+
+<div class="mu" id="sbStatus">
+${SB.session?.user?.email?'Connecté : '+esc(SB.session.user.email):'Session non connectée'}
+</div>
+
+<hr>
+
+<div class="row">
+<button class="btn" id="sbPush">Envoyer mes agents vers Supabase</button>
+<button class="btn" id="sbPull">Importer mes agents depuis Supabase</button>
+</div>
+
+<p class="mu">
+La synchronisation concerne les agents de public.agents.
+Les tâches, workflows et mémoires restent locaux à ce stade.
+</p>
+</div>
+
+<div class="card">
+<h3>Moteur IA</h3>
+
+<label class="mu">Modèle par défaut</label>
+<select id="defaultModel">
+${MODELS.map(m=>`<option value="${esc(m)}" ${S.cfg.model===m?'selected':''}>${esc(m)}</option>`).join('')}
+</select>
+
+<button class="btn" id="modelSave">Enregistrer le modèle</button>
+
+<hr>
+
+<p class="mu">
+Gemini est appelé par le Supabase AI Gateway.
+La clé API Gemini ne doit jamais être placée dans ce fichier.
+</p>
+</div>
+
+<div class="card">
+<h3>Apparence</h3>
+
+<label class="mu">Thème</label>
+<select id="th">
+${['auto','light','dark'].map(t=>`<option ${S.cfg.theme===t?'selected':''}>${t}</option>`).join('')}
+</select>
+
+<label class="mu" style="display:block;margin-top:10px">Rétention mémoire (jours)</label>
+<input id="ret" type="number" min="1" value="${S.cfg.retention}">
+</div>
+
+<div class="card">
+<h3>Synchronisation</h3>
+
+<div class="row">
+<button class="btn" id="sbPush2">Envoyer mes agents vers Supabase</button>
+<button class="btn" id="sbPull2">Récupérer les agents</button>
+</div>
+</div>
+
+<div class="card">
+<h3>Sauvegarde</h3>
+
+<div class="row">
+<button class="btn" id="exp">Exporter JSON</button>
+
+<label class="btn">
+Importer JSON
+<input id="imp" type="file" accept=".json" hidden>
+</label>
+
+<button class="btn" id="leg">Importer Hub V1</button>
+<button class="btn d" id="rst">Réinitialiser</button>
+</div>
+
+<p class="mu">Version ${VER} · stockage IndexedDB</p>
+</div>
+`;
+}
+};
+
+/* ================= FORMULAIRE AGENT ================= */
+
+function agentForm(g){
+
+dlg(
+g?'Modifier l’agent':'Nouvel agent',
+[
+{k:'name',l:'Nom',r:1},
+{k:'cat',l:'Catégorie',t:'select',o:S.cats},
+{k:'mission',l:'Mission',t:'area'},
+{k:'instr',l:'Instructions système',t:'area'},
+{k:'caps',l:'Capacités séparées par des virgules'},
+{k:'model',l:'Modèle',t:'select',o:MODELS}
+],
+o=>{
+const caps=o.caps.split(',').map(s=>s.trim()).filter(Boolean);
+
+let a;
+
+if(g){
+Object.assign(g,{
+name:o.name,
+cat:o.cat,
+mission:o.mission,
+instr:o.instr,
+caps,
+model:o.model
+});
+a=g;
+}else{
+a={
+...mkAgent(o.name,o.cat,o.mission,caps,0),
+instr:o.instr,
+model:o.model
+};
+S.agents.push(a);
+Bus.emit('AGENT_CREATED','ui',{name:a.name});
+}
+
+save();
+
+if(SB.session?.user?.id){
+SB.upsertAgent(a)
+.then(()=>toast('Agent synchronisé avec Supabase'))
+.catch(e=>toast('Agent local. Synchronisation : '+e.message));
+}else{
+toast('Agent enregistré localement.');
+}
+},
+g?{...g,caps:g.caps.join(', ')}:{}
+);
+}
+
+/* ================= RENDU ================= */
+
+function side(){
+const s=$('#side');
+
+s.innerHTML=`
+<b>Activité récente</b>
+
+${S.events.slice(0,12).map(e=>`
+<div class="mu" style="margin-top:6px">
+${fmt(e.ts)} · ${esc(e.type)}
+</div>
+`).join('')||'<div class="mu">Aucune activité.</div>'}
+
+<p class="mu">Raccourci : / pour rechercher</p>
+`;
+}
+
+function theme(){
+const t=S.cfg.theme;
+
+if(t==='auto'){
+document.documentElement.removeAttribute('data-theme');
+}else{
+document.documentElement.dataset.theme=t;
+}
+}
+
+function render(){
+nav();
+
+$('#main').innerHTML=
+`<div class="row" style="justify-content:flex-end;margin-bottom:-8px">
+<button class="btn s" id="sd">Panneau activité</button>
+</div>`+
+V[cur]();
+
+$('#sd').onclick=()=>{
+$('#side').classList.toggle('h');
+side();
+};
+
+side();
+bind();
+}
+
+/* ================= ACTIONS INTERFACE ================= */
+
+function bind(){
+
+const m=$('#main');
+const $$=s=>m.querySelectorAll(s);
+const on=(s,f)=>{
+const e=m.querySelector(s);
+if(e)e.onclick=f;
+};
+
+const qi=$('#q');
+
+if(qi){
+qi.oninput=()=>{
+q=qi.value;
+const p=qi.selectionStart;
+render();
+const n=$('#q');
+if(n){
+n.focus();
+n.setSelectionRange(p,p);
+}
+};
+}
+
+/* ORCHESTRATEUR */
+
+on('#go',()=>{
+const t=$('#cmd').value.trim();
+
+if(!t){
+toast('Saisissez une instruction.');
+return;
+}
+
+const r=Orch.plan(t,$('#cm').value);
+
+if(Sec.suspect(t)){
+Bus.emit('SYSTEM_ALERT','sécurité',{msg:'Instruction suspecte signalée'});
+}
+
+toast(r.length+' tâche(s) à valider');
+
+cur='tasks';
+render();
+});
+
+/* ACTIONS DES CARTES */
+
+$$('[data-a]').forEach(b=>{
+b.onclick=async()=>{
+const a=b.dataset.a;
+const i=b.dataset.i;
+
+if(cur==='agents'){
+const g=S.agents.find(x=>x.id===i);
+
+if(a==='edit')agentForm(g);
+
+if(a==='dup'){
+S.agents.push({
+...g,
+id:uid('ag'),
+name:g.name+' (copie)',
+runs:0,
+fails:0,
+created:now()
+});
+save();
+render();
+}
+
+if(a==='tog'){
+g.state=g.state==='actif'?'pause':'actif';
+audit('Agent '+g.state,g.name);
+save();
+render();
+}
+
+if(a==='test'){
+const t={
+id:uid('tk'),
+title:'Test '+g.name,
+desc:'Présente tes capacités, ta mission et ton fonctionnement.',
+agent:g.id,
+prio:'normale',
+created:now(),
+due:'',
+status:'en attente',
+deps:[],
+result:null,
+hist:[],
+corr:uid('co')
+};
+
+S.tasks.unshift(t);
+render();
+await Orch.exec(t);
+}
+
+if(a==='del'){
+askDel('Supprimer '+g.name+' ?',()=>{
+S.agents=S.agents.filter(x=>x!==g);
+audit('Agent supprimé',g.name);
+});
+}
+}
+
+else if(cur==='tasks'){
+
+if(a==='ok'){
+await Orch.approve([i],'sequentiel');
+}
+
+if(a==='retry'){
+const t=S.tasks.find(t=>t.id===i);
+if(t)await Orch.exec(t);
+}
+
+if(a==='del'){
+askDel('Supprimer cette tâche ?',()=>{
+S.tasks=S.tasks.filter(t=>t.id!==i);
+});
+}
+
+}
+
+else if(cur==='flows'){
+
+const w=S.workflows.find(x=>x.id===i);
+
+if(a==='run')Flow.run(w);
+
+if(a==='tog'){
+w.on=!w.on;
+save();
+render();
+}
+
+if(a==='dup'){
+S.workflows.push({
+...w,
+id:uid('wf'),
+name:w.name+' (copie)',
+hist:[]
+});
+save();
+render();
+}
+
+if(a==='step'){
+dlg(
+'Ajouter une étape',
+[
+{k:'type',l:'Type',t:'select',o:STEPS},
+{k:'val',l:'Agent ou valeur',t:'select',o:[
+{v:'',l:'—'},
+...S.agents.map(g=>({v:g.id,l:g.name}))
+]}
+],
+o=>w.steps.push({type:o.type,val:o.val})
+);
+}
+
+if(a==='del'){
+askDel('Supprimer ce workflow ?',()=>{
+S.workflows=S.workflows.filter(x=>x!==w);
+});
+}
+}
+
+else if(cur==='conn'){
+
+S.conn[i]=!S.conn[i];
+
+audit('Connecteur démo',i+' '+(S.conn[i]?'activé':'désactivé'));
+
+Bus.emit(
+S.conn[i]?'CONNECTOR_CONNECTED':'CONNECTOR_DISCONNECTED',
+'connecteurs',
+{name:i,simule:true}
+);
+
+render();
+}
+
+else if(cur==='kb'&&a==='del'){
+askDel('Supprimer ?',()=>{
+S.kb=S.kb.filter(x=>x.id!==i);
+});
+}
+
+else if(cur==='mem'&&a==='del'){
+askDel('Effacer cette mémoire ?',()=>{
+S.mem=S.mem.filter(x=>x.id!==i);
+});
+}
+};
+});
+
+/* AJOUT */
+
+on('#add',()=>{
+
+const ag=[
+{v:'',l:'—'},
+...S.agents.map(g=>({v:g.id,l:g.name}))
+];
+
+if(cur==='agents'){
+agentForm();
+}
+
+if(cur==='flows'){
+dlg('Nouveau workflow',[
+{k:'name',l:'Nom',r:1}
+],o=>S.workflows.push({
+id:uid('wf'),
+name:o.name,
+steps:[],
+on:false,
+hist:[]
+}));
+}
+
+if(cur==='tasks'){
+dlg('Nouvelle tâche',[
+{k:'title',l:'Titre',r:1},
+{k:'agent',l:'Agent',t:'select',o:ag.slice(1)},
+{k:'prio',l:'Priorité',t:'select',o:['basse','normale','haute']}
+],o=>S.tasks.unshift({
+id:uid('tk'),
+title:o.title,
+desc:o.title,
+agent:o.agent,
+prio:o.prio,
+created:now(),
+due:'',
+status:'validation',
+deps:[],
+result:null,
+hist:[{ts:now(),s:'créée'}],
+corr:uid('co')
+}));
+}
+
+if(cur==='kb'){
+dlg('Document',[
+{k:'title',l:'Titre',r:1},
+{k:'tag',l:'Catégorie'},
+{k:'agent',l:'Rattaché à',t:'select',o:ag},
+{k:'body',l:'Contenu',t:'area'}
+],o=>S.kb.push({id:uid('kb'),...o}));
+}
+
+if(cur==='mem'){
+dlg('Mémoire',[
+{k:'agent',l:'Agent',t:'select',o:ag.slice(1)},
+{k:'scope',l:'Portée',t:'select',o:['privée','partagée']},
+{k:'text',l:'Contenu',t:'area'}
+],o=>S.mem.push({
+id:uid('mm'),
+ts:now(),
+...o
+}));
+}
+});
+
+/* TÂCHES */
+
+on('#okall',async()=>{
+const ids=S.tasks.filter(t=>t.status==='validation').map(t=>t.id);
+await Orch.approve(ids,'sequentiel');
+});
+
+const vw=$('#vw');
+
+if(vw){
+vw.onchange=()=>{
+view=vw.value;
+render();
+};
+}
+
+/* COMMUNICATIONS */
+
+on('#ping',()=>{
+Bus.emit('SYSTEM_ALERT','ui',{msg:'Test manuel'},{prio:'haute'});
+render();
+});
+
+/* MÉMOIRE */
+
+on('#purge',()=>{
+const lim=Date.now()-S.cfg.retention*864e5;
+const n=S.mem.length;
+S.mem=S.mem.filter(x=>new Date(x.ts)>lim);
+toast((n-S.mem.length)+' mémoire(s) supprimée(s)');
+save();
+render();
+});
+
+/* SUPABASE SETTINGS */
+
+const sburl=$('#sburl');
+const sbkey=$('#sbkey');
+
+on('#sbSave',()=>{
+S.cfg.sburl=sburl.value.trim();
+S.cfg.sbkey=sbkey.value.trim();
+save();
+toast('Configuration Supabase enregistrée.');
+});
+
+on('#sbTest',async()=>{
+try{
+S.cfg.sburl=sburl.value.trim();
+S.cfg.sbkey=sbkey.value.trim();
+save();
+
+await SB.test();
+
+toast('Supabase REST opérationnel.');
+}catch(e){
+toast('Test Supabase : '+e.message);
+}
+});
+
+on('#sbSign',async()=>{
+try{
+S.cfg.sburl=sburl.value.trim();
+S.cfg.sbkey=sbkey.value.trim();
+save();
+
+const d=await SB.auth(
+'signup',
+$('#sbemail').value,
+$('#sbpass').value
+);
+
+$('#sbStatus').textContent=d.access_token
+?'Compte créé et connecté.'
+:'Compte créé. Confirmez votre e-mail.';
+
+toast(d.access_token?'Inscription réussie':'Confirmation e-mail requise');
+
+render();
+
+}catch(e){
+$('#sbStatus').textContent='Inscription : '+e.message;
+toast(e.message);
+}
+});
+
+on('#sbLogin',async()=>{
+try{
+S.cfg.sburl=sburl.value.trim();
+S.cfg.sbkey=sbkey.value.trim();
+save();
+
+const d=await SB.auth(
+'login',
+$('#sbemail').value,
+$('#sbpass').value
+);
+
+$('#sbStatus').textContent='Connecté : '+(d.user?.email||'utilisateur');
+
+toast('Connexion Supabase réussie');
+
+render();
+
+}catch(e){
+$('#sbStatus').textContent='Connexion : '+e.message;
+toast(e.message);
+}
+});
+
+on('#sbLogout',()=>{
+SB.logout();
+$('#sbStatus').textContent='Session déconnectée';
+toast('Déconnexion Supabase.');
+render();
+});
+
+async function pushAgents(){
+try{
+S.cfg.sburl=sburl.value.trim();
+S.cfg.sbkey=sbkey.value.trim();
+save();
+
+const n=await SB.push();
+
+toast(n+' agent(s) synchronisé(s).');
+}catch(e){
+toast('Synchronisation : '+e.message);
+}
+}
+
+async function pullAgents(){
+try{
+S.cfg.sburl=sburl.value.trim();
+S.cfg.sbkey=sbkey.value.trim();
+save();
+
+const n=await SB.pull();
+
+toast(n+' agent(s) importé(s).');
+}catch(e){
+toast('Import : '+e.message);
+}
+}
+
+on('#sbPush',pushAgents);
+on('#sbPush2',pushAgents);
+on('#sbPull',pullAgents);
+on('#sbPull2',pullAgents);
+
+/* MODÈLE */
+
+on('#modelSave',()=>{
+S.cfg.model=$('#defaultModel').value;
+save();
+toast('Modèle enregistré.');
+});
+
+on('#th',()=>{
+S.cfg.theme=$('#th').value;
+theme();
+save();
+});
+
+const rt=$('#ret');
+
+if(rt){
+rt.onchange=()=>{
+S.cfg.retention=Math.max(1,+rt.value||90);
+save();
+};
+}
+
+/* EXPORT */
+
+on('#exp',()=>{
+const a=document.createElement('a');
+
+a.href=URL.createObjectURL(
+new Blob([JSON.stringify(S,null,2)],{type:'application/json'})
+);
+
+a.download='mon_hub_multi_agents_v3.json';
+a.click();
+
+URL.revokeObjectURL(a.href);
+});
+
+/* IMPORT */
+
+const im=$('#imp');
+
+if(im){
+im.onchange=async()=>{
+try{
+migrate(JSON.parse(await im.files[0].text()));
+save();
+toast('Sauvegarde restaurée.');
+render();
+}catch{
+toast('Fichier JSON invalide.');
+}
+};
+}
+
+/* IMPORT V1 */
+
+on('#leg',()=>{
+const n=importLegacy();
+
+toast(n?n+' agent(s) importé(s)':'Aucune donnée V1 trouvée');
+
+save();
+render();
+});
+
+/* RESET */
+
+on('#rst',()=>{
+askDel('Réinitialiser le Hub ? Cette action est irréversible.',()=>{
+S=defaults();
+SB.logout();
+});
+});
+
+}
+
+/* ================= INITIALISATION ================= */
+
+document.addEventListener('keydown',e=>{
+if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+
+if(e.key==='/'){
+e.preventDefault();
+const n=$('#q');
+if(n)n.focus();
+}
+
+if(e.key==='Escape'){
+const d=$('#dlg');
+if(d.open)d.close();
+}
+});
+
+(async()=>{
+await Persist.init();
+
+const d=await Persist.load();
+
+if(d){
+migrate(d);
+}else{
+const n=importLegacy();
+if(n)toast(n+' agent(s) importé(s) depuis V1');
+}
+
+await SB.restore();
+
+theme();
+render();
+
+audit('Hub démarré','Version '+VER);
+})();
+</script>
+</body>
+</html>
