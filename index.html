@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1633">
-<title>Mon Hub Multi-Agents V3</title>
+<title>Mon Hub Multi-Agents V4</title>
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -70,6 +70,7 @@ background:var(--sf);color:var(--tx);border-radius:8px;padding:6px 12px
 .btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
 .btn.d{color:var(--er)}
 .btn.s{padding:3px 9px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .g{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px}
 .big{font-size:28px;font-weight:600}
@@ -94,7 +95,6 @@ dialog label{display:block;margin:8px 0 2px;font-size:12px;color:var(--mu)}
 .bar{display:flex;align-items:flex-end;gap:6px;height:90px}
 .bar i{flex:1;background:var(--ac);border-radius:3px 3px 0 0;min-height:2px}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;margin:0}
-.task-result{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
 textarea{min-height:75px}
 @media(max-width:760px){
 #app{grid-template-columns:auto 1fr}
@@ -121,8 +121,8 @@ main{padding:12px}
 'use strict';
 
 /* ==========================================================
-   MON HUB MULTI-AGENTS V3
-   Supabase + AI Gateway + Gemini
+   MON HUB MULTI-AGENTS V4
+   AI-Gateway V2 compatible · Gemini · Supabase
    ========================================================== */
 
 /* ================= UTILITAIRES ================= */
@@ -201,7 +201,7 @@ console.error('Erreur sauvegarde',e);
 
 /* ================= ÉTAT ================= */
 
-const VER=3;
+const VER=4;
 
 const CAPS=[
 'coordination','vente','marketing','finance','administration',
@@ -440,15 +440,38 @@ data=raw;
 }
 
 if(!response.ok){
-const msg=
-data?.message||
-data?.msg||
-data?.error_description||
-data?.details||
-data?.hint||
-(typeof data==='string'?data:'HTTP '+response.status);
+/* Extraction robuste du message d'erreur
+   Format Gateway V2 : {success:false, error:"...", provider_status, attempts, retryable}
+   Format Supabase Auth/REST : {message|msg|error_description|hint} */
+let msg='HTTP '+response.status;
 
-throw new Error('HTTP '+response.status+' — '+msg);
+if(typeof data==='string'){
+msg=data;
+}else if(data&&typeof data==='object'){
+if(typeof data.error==='string'){
+msg=data.error;
+}else if(data.error&&typeof data.error==='object'&&data.error.message){
+msg=data.error.message;
+}else if(data.message){
+msg=data.message;
+}else if(data.msg){
+msg=data.msg;
+}else if(data.error_description){
+msg=data.error_description;
+}else if(data.hint){
+msg=data.hint;
+}
+}
+
+const err=new Error(msg);
+err.status=response.status;
+err.data=data;
+if(data&&typeof data==='object'){
+err.retryable=data.retryable;
+err.provider_status=data.provider_status;
+err.gateway_attempts=data.attempts;
+}
+throw err;
 }
 
 return data;
@@ -483,8 +506,13 @@ const exp=Number(saved.expires_at||0);
 
 if(exp&&exp<Date.now()/1000+60){
 try{
+/* FIX SESSION : on force l'Authorization sur la clé Publishable
+   pour le refresh, car le token actuel est expiré. */
 const d=await this.request('/auth/v1/token?grant_type=refresh_token',{
 method:'POST',
+headers:{
+Authorization:'Bearer '+this.config().key
+},
 body:JSON.stringify({refresh_token:saved.refresh_token})
 });
 
@@ -640,7 +668,7 @@ return rows.length;
 }
 };
 
-/* ================= AGENT RUNTIME IA ================= */
+/* ================= AGENT RUNTIME — AI GATEWAY V2 ================= */
 
 const Runtime={
 async run(agent,task){
@@ -667,7 +695,7 @@ agent.name+' a pris en charge : '+task.title+
 };
 }
 
-/* GEMINI VIA SUPABASE */
+/* GEMINI VIA AI GATEWAY V2 */
 
 if(agent.model.startsWith('gemini-')){
 
@@ -677,53 +705,62 @@ throw new Error(
 );
 }
 
-const prompt=`
-IDENTITÉ DE L'AGENT
-Nom : ${agent.name}
-Catégorie : ${agent.cat||'Agent spécialisé'}
+const systemInstruction =
+`Tu es ${agent.name}, un agent IA spécialisé opérant dans un hub multi-agents.
 
-MISSION
-${agent.mission||'Assistance générale'}
+IDENTITÉ
+- Nom : ${agent.name}
+- Catégorie : ${agent.cat||'Agent spécialisé'}
+- Mission : ${agent.mission||'Assistance générale'}
 
-INSTRUCTIONS SYSTÈME
+CAPACITÉS DÉCLARÉES
+${(agent.caps||[]).map(c=>'- '+c).join('\n')||'- Assistance générale'}
+
+INSTRUCTIONS PERMANENTES
 ${agent.instr||'Tu es un assistant professionnel, rigoureux et efficace.'}
 
-CAPACITÉS
-${(agent.caps||[]).join(', ')||'Assistance générale'}
+RÈGLES
+- Réponds en français sauf si la tâche demande explicitement une autre langue.
+- Produis un résultat concret, structuré et directement exploitable.
+- N'invente pas de faits. Si une information manque, signale-la clairement.
+- Ne prétends pas avoir réalisé des actions externes que tu n'as pas réellement effectuées.
+- Reste dans ton rôle et tes capacités déclarées.`;
 
-TÂCHE
+const prompt =
+`TÂCHE À EXÉCUTER
+Titre : ${task.title}
+
+Description / Demande :
 ${task.desc||task.title}
 
-TITRE DE LA TÂCHE
-${task.title}
-
-CONSIGNES
-- Exécute la tâche et produis un résultat concret.
-- Réponds en français sauf si la tâche demande une autre langue.
-- Structure clairement le résultat.
-- N'invente pas de faits.
-- Signale les informations manquantes.
-- Ne prétends pas avoir réalisé des actions externes non disponibles.
-`;
+Produis ta contribution en respectant l'identité et les instructions reçues.`;
 
 const data=await SB.request('/functions/v1/ai-gateway',{
 method:'POST',
 body:JSON.stringify({
 model:agent.model,
-prompt:prompt
+prompt:prompt,
+systemInstruction:systemInstruction
 })
 });
 
-if(!data||data.success!==true){
-throw new Error(
-data?.error||
-data?.message||
+/* Le Gateway V2 renvoie {success:false,error,...} sur erreur mais le HTTP status
+   est déjà non-OK, donc SB.request a déjà thrown. Ce check couvre le cas
+   défensif d'un 200 avec success:false. */
+if(data&&data.success===false){
+const err=new Error(
+(typeof data.error==='string'?data.error:data.error?.message)||
 'Erreur du Gateway IA.'
 );
+err.status=data.provider_status||null;
+err.retryable=data.retryable;
+err.gateway_attempts=data.attempts;
+err.data=data;
+throw err;
 }
 
-if(!data.reply){
-throw new Error('Réponse IA vide.');
+if(!data||!data.reply){
+throw new Error('Le Gateway n\'a pas renvoyé de contenu.');
 }
 
 return{
@@ -811,27 +848,40 @@ save();
 return ts;
 },
 
-async exec(t,tries=0){
+/* Exécution unique, sans relance automatique, protégée contre les doubles clics.
+   La tâche est sauvegardée immédiatement après passage en "en cours" pour
+   éviter tout état incohérent en cas de fermeture de page. */
+async exec(t){
+
+if(!t)return;
+
+if(t.status==='en cours'){
+toast('Cette tâche est déjà en cours.');
+return;
+}
 
 const a=S.agents.find(x=>x.id===t.agent);
 
 if(!a){
 t.status='erreur';
-t.result={erreur:'Agent introuvable.'};
+t.result={erreur:'Agent introuvable.',retryable:false,code:null};
 save();
 render();
 return;
 }
 
 t.status='en cours';
+t.result=null;
+
+t.hist=t.hist||[];
 t.hist.push({ts:now(),s:'démarrée'});
+
+save();
+render();
 
 Bus.emit('AGENT_STARTED',a.name,{task:t.id},{corr:t.corr});
 
-render();
-
 try{
-
 const r=await Runtime.run(a,t);
 
 t.result=r;
@@ -846,24 +896,37 @@ Bus.emit('AGENT_COMPLETED',a.name,{task:t.id},{corr:t.corr});
 
 }catch(e){
 
-/* PAS DE RELANCE AUTOMATIQUE GEMINI */
-
-if(
-tries<Sec.MAX_RETRY&&
-!a.model.startsWith('gemini-')&&
-!/backend/i.test(e.message)
-){
-t.hist.push({ts:now(),s:'reprise '+(tries+1)});
-return this.exec(t,tries+1);
-}
-
 t.status='erreur';
-t.result={erreur:e.message};
+
+const code=
+e.status||
+e.provider_status||
+e.data?.provider_status||
+null;
+
+const retryable=e.retryable!==false;
+
+const attempts=
+e.gateway_attempts||
+e.data?.attempts||
+1;
+
+t.result={
+erreur:e.message||'Erreur inconnue.',
+code,
+retryable,
+attempts,
+at:now()
+};
+
 a.fails++;
+
+t.hist.push({ts:now(),s:'échec : '+String(e.message||'').slice(0,120)});
 
 Bus.emit('AGENT_FAILED',a.name,{
 msg:e.message,
-task:t.id
+task:t.id,
+code
 },{corr:t.corr,prio:'haute'});
 
 }
@@ -873,7 +936,18 @@ render();
 },
 
 async approve(ids,mode){
-const ts=ids.map(i=>S.tasks.find(t=>t.id===i)).filter(Boolean);
+
+/* On ne traite QUE les tâches encore en état "validation".
+   Cela empêche une double validation de lancer deux exécutions
+   de la même tâche (protection anti double-clic). */
+const ts=ids
+.map(i=>S.tasks.find(t=>t.id===i))
+.filter(t=>t&&t.status==='validation');
+
+if(!ts.length){
+toast('Aucune tâche à valider.');
+return;
+}
 
 audit('Validation humaine',ts.length+' tâche(s)');
 
@@ -1031,7 +1105,7 @@ const nb=()=>S.tasks.filter(t=>t.status==='validation').length;
 
 function nav(){
 $('#nav').innerHTML=
-`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V3</span></h1>`+
+`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V4</span></h1>`+
 MODS.map(m=>
 `<button data-m="${m[0]}" class="${cur===m[0]?'on':''}" title="${m[2]}">
 <span>${m[1]}</span><span class="t">${m[2]}</span>
@@ -1132,6 +1206,40 @@ save();
 render();
 }
 };
+
+/* Rendu du bloc résultat de tâche (succès simulé, succès IA, ou erreur) */
+function taskResultBox(t){
+if(!t.result)return '';
+
+const r=t.result;
+
+const isErr=!!r.erreur;
+const isSim=r.simule;
+
+const label=isSim
+?'⚠️ Résultat simulé'
+:isErr
+?'❌ Échec d\'exécution'
+:'🧠 Réponse IA réelle';
+
+return `
+<div style="margin-top:10px">
+<div class="mu">
+${label}
+${r.model?' · '+esc(r.model):''}
+${r.code?' · HTTP '+esc(r.code):''}
+${r.attempts&&r.attempts>1?' · '+r.attempts+' tentative(s)':''}
+</div>
+
+<pre style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;max-height:450px;overflow:auto">${esc(r.texte||r.erreur||'')}</pre>
+
+${r.usage&&r.usage.totalTokenCount?`<div class="mu">Tokens : ${r.usage.totalTokenCount}</div>`:''}
+
+${isErr&&r.retryable===false?
+'<div class="mu" style="margin-top:4px">⚠️ Cette erreur est marquée non réessayable.</div>':''}
+</div>
+`;
+}
 
 /* ================= VUES ================= */
 
@@ -1260,7 +1368,8 @@ sous-tâches → validation humaine → exécution → résultat.
 
 <p class="mu">
 Sélection par correspondance entre mots-clés, capacités et missions.
-Maximum ${Sec.MAX_TASKS} tâches par demande.
+Maximum ${Sec.MAX_TASKS} tâches par demande. Aucune relance automatique :
+en cas d'échec, la tâche passe en erreur et vous décidez quand la relancer.
 </p>
 
 <textarea id="cmd" rows="3" placeholder="Votre demande…"></textarea>
@@ -1325,27 +1434,20 @@ const card=t=>`
 ${t.sensible?' · <span class="tag er">contenu suspect</span>':''}
 </div>
 
-${t.result?`
-<div style="margin-top:10px">
-<div class="mu">
-${t.result.simule?'⚠️ Résultat simulé':'🧠 Réponse IA réelle'}
-${t.result.model?' · '+esc(t.result.model):''}
-</div>
+${taskResultBox(t)}
 
-<pre style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;max-height:450px;overflow:auto">${esc(t.result.texte||t.result.erreur||'')}</pre>
-${t.result.usage?`<div class="mu">Tokens : ${t.result.usage.totalTokenCount||'—'}</div>`:''}
-</div>
-`:''}
-
+<div class="row" style="margin-top:8px">
 ${t.status==='validation'?`
 <button class="btn s p" data-a="ok" data-i="${t.id}">Valider</button>
 `:''}
 
 ${t.status==='erreur'?`
+${t.result?.retryable===false?'<span class="mu">⚠️ non réessayable</span>':''}
 <button class="btn s" data-a="retry" data-i="${t.id}">Relancer</button>
 `:''}
 
 <button class="btn s d" data-a="del" data-i="${t.id}">Supprimer</button>
+</div>
 </div>
 `;
 
@@ -1545,12 +1647,12 @@ return`
 
 <div class="card">
 <ul>
-<li>Entrées nettoyées.</li>
-<li>Échappement HTML des données affichées.</li>
+<li>Entrées nettoyées et échappement HTML des données.</li>
 <li>Validation humaine des tâches de l'orchestrateur.</li>
 <li>Maximum ${Sec.MAX_TASKS} tâches par demande.</li>
-<li>Pas de clé Gemini dans le HTML.</li>
-<li>Les secrets restent dans Supabase Edge Function Secrets.</li>
+<li>Aucune relance automatique côté Hub : le Gateway V2 gère sa propre tentative de secours.</li>
+<li>Protection anti double-exécution sur chaque tâche.</li>
+<li>Pas de clé Gemini dans le HTML — le secret est stocké dans Supabase Edge Function Secrets.</li>
 <li>Les connecteurs externes ne sont pas encore autorisés à agir.</li>
 </ul>
 </div>
@@ -1619,14 +1721,14 @@ ${SB.session?.user?.email?'Connecté : '+esc(SB.session.user.email):'Session non
 
 <p class="mu">
 La synchronisation concerne les agents de public.agents.
-Les tâches, workflows et mémoires restent locaux à ce stade.
+Les tâches, workflows et mémoires restent locaux.
 </p>
 </div>
 
 <div class="card">
 <h3>Moteur IA</h3>
 
-<label class="mu">Modèle par défaut</label>
+<label class="mu">Modèle par défaut (appliqué aux nouveaux agents)</label>
 <select id="defaultModel">
 ${MODELS.map(m=>`<option value="${esc(m)}" ${S.cfg.model===m?'selected':''}>${esc(m)}</option>`).join('')}
 </select>
@@ -1636,7 +1738,7 @@ ${MODELS.map(m=>`<option value="${esc(m)}" ${S.cfg.model===m?'selected':''}>${es
 <hr>
 
 <p class="mu">
-Gemini est appelé par le Supabase AI Gateway.
+Gemini est appelé via le Supabase AI Gateway V2.
 La clé API Gemini ne doit jamais être placée dans ce fichier.
 </p>
 </div>
@@ -1651,15 +1753,6 @@ ${['auto','light','dark'].map(t=>`<option ${S.cfg.theme===t?'selected':''}>${t}<
 
 <label class="mu" style="display:block;margin-top:10px">Rétention mémoire (jours)</label>
 <input id="ret" type="number" min="1" value="${S.cfg.retention}">
-</div>
-
-<div class="card">
-<h3>Synchronisation</h3>
-
-<div class="row">
-<button class="btn" id="sbPush2">Envoyer mes agents vers Supabase</button>
-<button class="btn" id="sbPull2">Récupérer les agents</button>
-</div>
 </div>
 
 <div class="card">
@@ -1732,7 +1825,12 @@ SB.upsertAgent(a)
 toast('Agent enregistré localement.');
 }
 },
-g?{...g,caps:g.caps.join(', ')}:{}
+/* FIX : appliquer le modèle par défaut aux nouveaux agents */
+g
+?{...g,caps:g.caps.join(', ')}
+:{
+model:S.cfg.model||'gemini-3.5-flash-lite'
+}
 );
 }
 
@@ -2197,9 +2295,7 @@ toast('Import : '+e.message);
 }
 
 on('#sbPush',pushAgents);
-on('#sbPush2',pushAgents);
 on('#sbPull',pullAgents);
-on('#sbPull2',pullAgents);
 
 /* MODÈLE */
 
@@ -2233,7 +2329,7 @@ a.href=URL.createObjectURL(
 new Blob([JSON.stringify(S,null,2)],{type:'application/json'})
 );
 
-a.download='mon_hub_multi_agents_v3.json';
+a.download='mon_hub_multi_agents_v4.json';
 a.click();
 
 URL.revokeObjectURL(a.href);
