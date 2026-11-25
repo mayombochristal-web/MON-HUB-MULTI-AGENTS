@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1633">
-<title>Mon Hub Multi-Agents V6</title>
+<title>MON-HUB-MULTI-AGENTS V7</title>
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -105,8 +105,8 @@ main{padding:12px}
 'use strict';
 
 /* ==========================================================
-   MON HUB MULTI-AGENTS V6
-   AI-Gateway V3 · Gemini · Supabase
+   MON HUB MULTI-AGENTS V7
+   AI-Gateway · Gemini · Supabase
    Parallèle · Chaînage · Contexte KB/Mémoire · Session robuste
    ========================================================== */
 
@@ -184,45 +184,46 @@ console.error('Erreur sauvegarde',e);
 
 /* ================= ÉTAT ================= */
 
-const VER=6;
+const VER=7;
 
 const MODELS=[
-'local-simulé',
 'gemini-3.5-flash-lite',
-'gemini-3.8-flash',
-'openai-compatible (backend requis)',
-'anthropic (backend requis)',
-'moteur local (backend requis)'
+'gemini-3.8-flash'
 ];
 
-const mkAgent=(name,cat,mission,caps,demo)=>({
+const isSupportedAiModel=model=>MODELS.includes(String(model||''));
+
+const agentManifest=(a,id)=>({
+  id,
+  name:a.name,
+  type:'ai',
+  version:Number.isInteger(Number(a.version))&&Number(a.version)>0?Number(a.version):1,
+  entrypoint:{runtime:'gateway'},
+  permissions:a.perms&&typeof a.perms==='object'?a.perms:{},
+  requirements:{provider:'gemini',model:a.model},
+  pricing:{},
+  compatibility:{}
+});
+
+const mkAgent=(name,cat,mission,caps,model)=>({
 id:uid('ag'),name,cat,mission,instr:'',
-model:'local-simulé',caps,tools:[],
+model:isSupportedAiModel(model)?model:'gemini-3.5-flash-lite',
+type:'ai',caps,tools:[],
 perms:{actionsSensibles:false},
-state:'actif',created:now(),runs:0,fails:0,demo
+state:'actif',created:now(),runs:0,fails:0,version:1
 });
 
 const defaults=()=>({
 v:VER,
-
-agents:[
-mkAgent('Coordinateur','Agent coordinateur','Répartit les demandes entre agents',['coordination'],1),
-mkAgent('Commercial','Agent commercial','Qualifie les prospects et prépare les relances',['vente','analyse'],1),
-mkAgent('Rédacteur','Agent rédactionnel','Rédige messages et contenus',['rédaction','marketing'],1),
-mkAgent('Analyste','Agent analyste','Évalue données et priorités',['analyse','finance','recherche'],1)
-],
-
+agents:[],
+archivedAgents:[],
 tasks:[],workflows:[],kb:[],mem:[],audit:[],events:[],
-
 cats:[
 'Agent coordinateur','Agent commercial','Agent marketing',
 'Agent financier','Agent administratif','Agent de recherche',
 'Agent rédactionnel','Agent technique','Agent de production',
 'Agent analyste','Agent personnel','Agent personnalisé'
 ],
-
-conn:{},
-
 cfg:{
 theme:'auto',
 retention:90,
@@ -238,29 +239,92 @@ rules:''
 
 let S=defaults();
 
+function archiveAgentRecord(agent,reason='Agent non pris en charge par le runtime IA V7'){
+  if(!agent||typeof agent!=='object')return;
+  const id=agent.id||agent.supabase_id||agent.local_id||null;
+  const supabaseId=agent.supabase_id||agent.id||null;
+  const exists=(S.archivedAgents||[]).some(x=>
+    (supabaseId&&((x.supabase_id||x.id)===supabaseId))||
+    (id&&x.id===id)
+  );
+  if(exists)return;
+  const {demo,...cleanAgent}=agent;
+  S.archivedAgents.push({
+    ...cleanAgent,
+    archiveReason:reason,
+    archivedAt:agent.archivedAt||now()
+  });
+}
+
+function isExecutableAiAgent(agent){
+  return !!agent &&
+    agent.type!=='html' &&
+    (agent.type===undefined||agent.type==='ai') &&
+    !agent.demo &&
+    agent.state!=='archivé' &&
+    isSupportedAiModel(agent.model);
+}
+
 function migrate(d){
 if(!d)return;
 
-S={...defaults(),...d,cfg:{...defaults().cfg,...(d.cfg||{})}};
+const base=defaults();
+S={...base,...d,cfg:{...base.cfg,...(d.cfg||{})}};
 S.v=VER;
+S.archivedAgents=Array.isArray(d.archivedAgents)?[...d.archivedAgents]:[];
+S.agents=[];
 
-S.agents=(S.agents||[]).map(a=>({
-...mkAgent(a.name||'Agent','Agent personnalisé',a.mission||'',a.caps||[],0),
-...a,
-id:a.id||uid('ag'),
-caps:a.caps||a.capabilities||[],
-state:a.state||'actif',
-model:a.model||'local-simulé',
-runs:a.runs||0,
-fails:a.fails||0
-}));
+// Reclasser les agents locaux : seuls les véritables modèles Gemini autorisés
+// restent exécutables. Les simulations et fournisseurs non configurés sont archivés.
+for(const raw of (Array.isArray(d.agents)?d.agents:[])){
+  const a={
+    ...raw,
+    id:raw.id||uid('ag'),
+    caps:raw.caps||raw.capabilities||[],
+    state:raw.state||'actif',
+    model:raw.model||raw.model_name||'',
+    runs:raw.runs||0,
+    fails:raw.fails||0
+  };
+  if(isExecutableAiAgent(a)){
+    a.type='ai';
+    delete a.demo;
+    S.agents.push(a);
+  }else{
+    const reason=a.type==='html'
+      ?'Agent HTML : runtime autonome séparé, non exécutable dans le Hub IA V7'
+      :a.demo||String(a.model).toLowerCase().includes('simul')||String(a.model).startsWith('local')
+        ?'Ancien agent simulé retiré : aucune réponse fictive autorisée'
+        :'Fournisseur ou modèle non configuré dans le runtime V7';
+    archiveAgentRecord(a,reason);
+  }
+}
 
-S.tasks=(S.tasks||[]).map(t=>({deps:[],hist:[],...t}));
-S.workflows=S.workflows||[];
-S.kb=S.kb||[];
-S.mem=S.mem||[];
-S.audit=S.audit||[];
-S.events=S.events||[];
+// Ne jamais conserver d'état de connecteur « démo » provenant de V6.
+delete S.conn;
+
+S.tasks=(Array.isArray(d.tasks)?d.tasks:[]).map(t=>{
+  const task={deps:[],hist:[],...t};
+  if(task.result&&task.result.simule){
+    task.status='erreur';
+    task.result={
+      erreur:'Ancien résultat simulé retiré en V7. Cette réponse n’est pas un résultat réel et ne peut pas être réutilisée.',
+      retryable:false,
+      attempts:0,
+      at:now()
+    };
+    task.hist=task.hist||[];
+    task.hist.push({ts:now(),s:'ancien résultat simulé invalidé lors du passage à V7'});
+  }
+  return task;
+});
+S.workflows=Array.isArray(d.workflows)?d.workflows:[];
+S.kb=Array.isArray(d.kb)?d.kb:[];
+S.mem=Array.isArray(d.mem)?d.mem:[];
+S.audit=Array.isArray(d.audit)?d.audit:[];
+S.events=Array.isArray(d.events)?d.events:[];
+S.cats=Array.isArray(d.cats)&&d.cats.length?d.cats:base.cats;
+if(!isSupportedAiModel(S.cfg.model))S.cfg.model='gemini-3.5-flash-lite';
 }
 
 /* Tâches restées « en cours » après fermeture de la page : on les débloque. */
@@ -277,26 +341,6 @@ n++;
 });
 if(n)save();
 return n;
-}
-
-/* ================= IMPORT ANCIEN HUB ================= */
-
-function importLegacy(){
-try{
-const o=JSON.parse(localStorage.getItem('HUB_USER_V1')||'null');
-if(!o)return 0;
-let n=0;
-(o.agents||[]).forEach(a=>{
-const name=a.name||a.nom||a.n;
-if(name&&!S.agents.some(x=>x.name===name)){
-S.agents.push(mkAgent(name,'Agent personnalisé',a.mission||a.desc||'Importé de Hub V1',[],0));
-n++;
-}
-});
-return n;
-}catch{
-return 0;
-}
 }
 
 /* ================= EVENT BUS ================= */
@@ -341,6 +385,7 @@ return /ignore (all|previous)|ignore les instructions|api[_ -]?key|mot de passe/
 const SB={
 session:null,
 _rp:null,
+_agentManifestColumns:null,
 
 config(){
 return{
@@ -550,8 +595,31 @@ async test(){
 return this.request('/rest/v1/agents?select=id&limit=1');
 },
 
+async hasAgentManifestColumns(){
+if(this._agentManifestColumns!==null)return this._agentManifestColumns;
+try{
+await this.request('/rest/v1/agents?select=type,manifest&limit=0');
+this._agentManifestColumns=true;
+}catch(e){
+const code=e.data?.code;
+const message=String(e.message||'').toLowerCase();
+const missingColumn=[400,404].includes(e.status)&&(
+  code==='PGRST204'||code==='42703'||
+  (message.includes('column')&&(message.includes('type')||message.includes('manifest')))||
+  message.includes('schema cache')
+);
+if(missingColumn){
+this._agentManifestColumns=false;
+}else{
+throw e;
+}
+}
+return this._agentManifestColumns;
+},
+
 async upsertAgent(a){
 if(!this.session?.user?.id)throw new Error('Connectez-vous à Supabase.');
+if(!isExecutableAiAgent(a))throw new Error('Synchronisation refusée : seul un véritable agent Gemini pris en charge peut être envoyé.');
 
 await this.ensureFresh();
 
@@ -564,14 +632,20 @@ owner_id:this.session.user.id,
 name:a.name,
 description:a.mission||'',
 system_prompt:a.instr||'',
-model_provider:a.model.startsWith('gemini')?'gemini':'local',
-model_name:a.model||'local-simulé',
+model_provider:'gemini',
+model_name:a.model,
 status:a.state==='actif'?'active':a.state==='pause'?'paused':'draft',
 capabilities:a.caps||[],
 permissions:a.perms||{},
 config:{category:a.cat||'Agent personnalisé',local_id:a.id},
-version:1
+version:Number.isInteger(Number(a.version))&&Number(a.version)>0?Number(a.version):1
 };
+
+// Compatible avec le schéma actuel et avec la migration A lorsqu'elle sera appliquée.
+if(await this.hasAgentManifestColumns()){
+row.type='ai';
+row.manifest=agentManifest(a,id);
+}
 
 await this.request('/rest/v1/agents?on_conflict=id',{
 method:'POST',
@@ -584,12 +658,9 @@ return id;
 
 async push(){
 if(!this.session?.user?.id)throw new Error('Connectez-vous d’abord.');
-let n=0;
-for(const a of S.agents){
-await this.upsertAgent(a);
-n++;
-}
-return n;
+const candidates=S.agents.filter(isExecutableAiAgent);
+for(const a of candidates)await this.upsertAgent(a);
+return candidates.length;
 },
 
 async pull(){
@@ -598,44 +669,61 @@ if(!this.session?.user?.id)throw new Error('Connectez-vous d’abord.');
 await this.ensureFresh();
 
 const owner=this.session.user.id;
-
 const rows=await this.request(
 '/rest/v1/agents?select=*&owner_id=eq.'+encodeURIComponent(owner)+'&order=updated_at.desc'
 );
+let imported=0;
 
 for(const r of rows){
 const localId=r.config?.local_id;
-
-const existing=localId
-?S.agents.find(a=>a.id===localId)
-:S.agents.find(a=>a.supabase_id===r.id);
-
-const mapped={
-id:existing?.id||localId||r.id,
-supabase_id:r.id,
-name:r.name,
-cat:r.config?.category||'Agent personnalisé',
-mission:r.description||'',
-instr:r.system_prompt||'',
-model:r.model_name||'local-simulé',
-caps:Array.isArray(r.capabilities)?r.capabilities:[],
-tools:[],
-perms:r.permissions||{},
-state:r.status==='active'?'actif':'pause',
-created:r.created_at||now(),
-runs:existing?.runs||0,
-fails:existing?.fails||0,
-demo:0
+const existing=S.agents.find(a=>
+  (localId&&a.id===localId)||a.supabase_id===r.id
+);
+const candidate={
+  id:existing?.id||localId||r.id,
+  supabase_id:r.id,
+  name:r.name,
+  cat:r.config?.category||'Agent personnalisé',
+  mission:r.description||'',
+  instr:r.system_prompt||'',
+  model:r.model_name||'',
+  type:r.type,
+  caps:Array.isArray(r.capabilities)?r.capabilities:[],
+  tools:[],
+  perms:r.permissions||{},
+  state:r.status==='active'?'actif':r.status==='archived'?'archivé':'pause',
+  created:r.created_at||now(),
+  runs:existing?.runs||0,
+  fails:existing?.fails||0,
+  version:Number(r.version)||1
 };
 
-if(existing)Object.assign(existing,mapped);
-else S.agents.push(mapped);
+const remoteIsAi=r.type===undefined||r.type==='ai';
+const remoteIsUsable=remoteIsAi&&r.status!=='archived'&&
+  r.model_provider==='gemini'&&isSupportedAiModel(r.model_name);
+
+if(!remoteIsUsable){
+  if(existing)S.agents=S.agents.filter(a=>a!==existing);
+  archiveAgentRecord(candidate,
+    r.type==='html'
+      ?'Agent HTML : runtime autonome séparé, non importé dans le Hub IA'
+      :r.status==='archived'
+        ?'Agent archivé côté Supabase'
+        :'Fournisseur ou modèle non pris en charge : aucun mode de simulation autorisé'
+  );
+  continue;
+}
+
+candidate.type='ai';
+delete candidate.demo;
+if(existing)Object.assign(existing,candidate);
+else S.agents.push(candidate);
+imported++;
 }
 
 save();
 render();
-
-return rows.length;
+return imported;
 }
 };
 
@@ -684,7 +772,7 @@ MAX_EACH:3500,
 build(task){
 const parts=(task.deps||[])
 .map(id=>S.tasks.find(x=>x.id===id))
-.filter(x=>x&&x.status==='terminée'&&x.result&&x.result.texte&&!x.result.simule)
+.filter(x=>x&&x.status==='terminée'&&x.result&&x.result.texte)
 .map(x=>'['+an(x.agent)+' — '+x.title+']\n'+String(x.result.texte).slice(0,this.MAX_EACH));
 
 if(!parts.length)return '';
@@ -695,26 +783,19 @@ parts.join('\n---\n')+
 }
 };
 
-/* ================= AGENT RUNTIME — AI GATEWAY V3 ================= */
+/* ================= AGENT RUNTIME — AI GATEWAY ================= */
 
 const Runtime={
 async run(agent,task){
 
 if(!agent)throw new Error('Agent introuvable.');
 if(agent.state!=='actif')throw new Error('Agent non actif.');
+if(agent.type==='html')throw new Error('Cet agent HTML utilise un runtime autonome séparé.');
+if(agent.type&&agent.type!=='ai')throw new Error('Type d’agent non reconnu.');
+if(!isSupportedAiModel(agent.model))throw new Error('Modèle non autorisé ou non configuré. Seuls les modèles Gemini activés sont acceptés.');
+if(!SB.session?.access_token)throw new Error('Connexion Supabase requise. Connectez-vous dans Paramètres.');
 
-/* MODE LOCAL SIMULÉ */
-
-if(agent.model.startsWith('local')){
-await sleep(350);
-return{
-simule:true,
-texte:'[SIMULÉ — aucun modèle IA appelé]\n\n'+agent.name+' a pris en charge : '+task.title+
-'\n\nConnectez un modèle Gemini dans les paramètres de l’agent pour obtenir une véritable réponse IA.'
-};
-}
-
-/* GEMINI VIA AI GATEWAY */
+/* APPEL IA RÉEL VIA LA GATEWAY */
 
 if(agent.model.startsWith('gemini-')){
 
@@ -775,7 +856,6 @@ throw err;
 if(!data||!data.reply)throw new Error('Le Gateway n’a pas renvoyé de contenu.');
 
 return{
-simule:false,
 texte:data.reply,
 model:data.model||agent.model,
 provider:data.provider||'gemini',
@@ -859,7 +939,7 @@ const a=S.agents.find(x=>x.id===t.agent);
 
 if(!a){
 t.status='erreur';
-t.result={erreur:'Agent introuvable.',retryable:false,code:null};
+t.result={erreur:S.archivedAgents?.some(x=>x.id===t.agent||x.supabase_id===t.agent)?'Cet agent a été archivé et ne peut plus exécuter de tâche.':'Agent introuvable.',retryable:false,code:null};
 save();
 render();
 return;
@@ -1119,7 +1199,7 @@ const nb=()=>S.tasks.filter(t=>t.status==='validation').length;
 
 function nav(){
 $('#nav').innerHTML=
-`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V6</span></h1>`+
+`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V7</span></h1>`+
 MODS.map(m=>
 `<button data-m="${m[0]}" class="${cur===m[0]?'on':''}" title="${m[2]}">
 <span>${m[1]}</span><span class="t">${m[2]}</span>
@@ -1142,7 +1222,7 @@ const search=()=>`<input id="q" placeholder="Rechercher…" value="${esc(q)}" st
 
 const match=o=>!q||JSON.stringify(o).toLowerCase().includes(q.toLowerCase());
 
-const an=id=>S.agents.find(a=>a.id===id)?.name||'—';
+const an=id=>S.agents.find(a=>a.id===id)?.name||S.archivedAgents?.find(a=>a.id===id||a.supabase_id===id)?.name||'—';
 
 const stTag=s=>`<span class="tag ${{'terminée':'ok','actif':'ok','erreur':'er','validation':'wa','en cours':'go','pause':'wa'}[s]||''}">${esc(s)}</span>`;
 
@@ -1203,14 +1283,14 @@ render();
 }
 };
 
-/* Bloc résultat : succès simulé, succès IA (avec secours/trace) ou erreur. */
+/* Bloc résultat : réponse IA réelle ou erreur d’exécution. */
 function taskResultBox(t){
 if(!t.result)return '';
 
 const r=t.result;
 const isErr=!!r.erreur;
 
-const label=r.simule?'⚠️ Résultat simulé':isErr?'❌ Échec d’exécution':'🧠 Réponse IA réelle';
+const label=isErr?'❌ Échec d’exécution':'🧠 Réponse IA réelle';
 
 const meta=[
 label,
@@ -1232,7 +1312,7 @@ return `
 ${trace}
 <pre style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;max-height:450px;overflow:auto">${esc(r.texte||r.erreur||'')}</pre>
 ${r.usage&&num(r.usage.totalTokenCount)?`<div class="mu">Tokens : ${num(r.usage.totalTokenCount)}</div>`:''}
-${(!isErr&&!r.simule&&r.texte&&!/[.!?…»)\]”*_:]\s*$/.test(String(r.texte).trim()))?'<div class="mu" style="margin-top:4px">⚠️ Réponse possiblement coupée : relancez la tâche ou demandez un livrable plus court.</div>':''}
+${(!isErr&&r.texte&&!/[.!?…»)\]”*_:]\s*$/.test(String(r.texte).trim()))?'<div class="mu" style="margin-top:4px">⚠️ Réponse possiblement coupée : relancez la tâche ou demandez un livrable plus court.</div>':''}
 ${isErr&&r.retryable===false?'<div class="mu" style="margin-top:4px">⚠️ Cette erreur est marquée non réessayable.</div>':''}
 </div>`;
 }
@@ -1321,7 +1401,7 @@ ${L.map(a=>`
 ${stTag(a.state)}
 </div>
 
-<div class="mu">${esc(a.cat)} ${a.demo?'<span class="tag go">démo</span>':''}</div>
+<div class="mu">${esc(a.cat)} <span class="tag">IA Gemini</span></div>
 
 <p>${esc(a.mission)}</p>
 
@@ -1340,7 +1420,7 @@ Modèle : ${esc(a.model)} · ${num(a.runs)} exéc. · ${num(a.fails)} échec(s)
 </div>
 </div>`).join('')}
 </div>`
-:empty('Aucun agent ne correspond.')}`;
+:empty('Aucun agent IA réel configuré. Créez un agent Gemini ou importez vos agents IA compatibles depuis Supabase.')}`;
 },
 
 orch(){
@@ -1439,7 +1519,7 @@ ${t.result&&(t.result.texte||t.result.erreur)?`<button class="btn s" data-a="cop
 
 const pend=S.tasks.filter(t=>t.status==='validation');
 const errs=S.tasks.filter(t=>t.status==='erreur'&&t.result?.retryable!==false);
-const done=S.tasks.filter(t=>t.status==='terminée'&&t.result?.texte&&!t.result.simule);
+const done=S.tasks.filter(t=>t.status==='terminée'&&t.result?.texte);
 
 return`
 <div class="top">
@@ -1480,7 +1560,7 @@ ${search()}
 </div>
 
 <div class="card mu" style="margin-bottom:12px">
-Liens d'accès et modes démo. Les connexions API réelles nécessitent une intégration backend.
+Liens vers les services. Les opérations depuis MON-HUB nécessitent une intégration API serveur configurée.
 </div>
 
 <div class="g">
@@ -1492,12 +1572,11 @@ ${CONN.filter(match).map(c=>`
 <div style="margin:6px 0">
 ${c[2]?'<span class="tag">Lien</span>':''}
 <span class="tag wa">API non configurée</span>
-${S.conn[c[0]]?'<span class="tag go">démo</span>':''}
+
 </div>
 
 <div class="row">
-${c[2]?`<a class="btn s" href="${c[2]}" target="_blank" rel="noopener noreferrer">Ouvrir</a>`:''}
-<button class="btn s" data-a="demo" data-i="${esc(c[0])}">${S.conn[c[0]]?'Désactiver démo':'Mode démo'}</button>
+${c[2]?`<a class="btn s" href="${c[2]}" target="_blank" rel="noopener noreferrer">Ouvrir le service</a>`:'<span class="mu">Aucun lien direct configuré</span>'}
 </div>
 </div>`).join('')}
 </div>`;
@@ -1715,8 +1794,8 @@ ${SB.session?.user?.email?'Connecté : '+esc(SB.session.user.email):'Session non
 <hr>
 
 <div class="row">
-<button class="btn" id="sbPush">Envoyer mes agents vers Supabase</button>
-<button class="btn" id="sbPull">Importer mes agents depuis Supabase</button>
+<button class="btn" id="sbPush">Synchroniser mes agents IA Gemini</button>
+<button class="btn" id="sbPull">Importer mes agents IA Gemini</button>
 </div>
 
 <p class="mu">
@@ -1735,8 +1814,8 @@ ${MODELS.map(m=>`<option value="${esc(m)}" ${S.cfg.model===m?'selected':''}>${es
 
 <div class="row" style="margin-top:8px">
 <button class="btn" id="modelSave">Enregistrer le modèle</button>
-<button class="btn" id="applyModel">Appliquer à tous les agents en local-simulé</button>
 </div>
+<p class="mu">Seuls les modèles Gemini autorisés par la Gateway sont proposés. Aucun résultat fictif ni fournisseur non configuré n'est exécuté.</p>
 
 <hr>
 
@@ -1794,7 +1873,6 @@ Importer JSON
 <input id="imp" type="file" accept=".json" hidden>
 </label>
 
-<button class="btn" id="leg">Importer Hub V1</button>
 <button class="btn d" id="rst">Réinitialiser</button>
 </div>
 
@@ -1823,10 +1901,11 @@ const caps=o.caps.split(',').map(s=>s.trim()).filter(Boolean);
 let a;
 
 if(g){
-Object.assign(g,{name:o.name,cat:o.cat,mission:o.mission,instr:o.instr,caps,model:o.model});
+if(!isSupportedAiModel(o.model)){toast('Modèle Gemini non autorisé.');return;}
+Object.assign(g,{name:o.name,cat:o.cat,mission:o.mission,instr:o.instr,caps,model:o.model,type:'ai'});
 a=g;
 }else{
-a={...mkAgent(o.name,o.cat,o.mission,caps,0),instr:o.instr,model:o.model};
+a={...mkAgent(o.name,o.cat,o.mission,caps,o.model),instr:o.instr,model:o.model,type:'ai'};
 S.agents.push(a);
 Bus.emit('AGENT_CREATED','ui',{name:a.name});
 }
@@ -1841,7 +1920,7 @@ SB.upsertAgent(a)
 toast('Agent enregistré localement.');
 }
 },
-g?{...g,caps:g.caps.join(', ')}:{model:S.cfg.model||'gemini-3.5-flash-lite'}
+g?{...g,caps:g.caps.join(', ')}:{model:isSupportedAiModel(S.cfg.model)?S.cfg.model:'gemini-3.5-flash-lite'}
 );
 }
 
@@ -2047,17 +2126,6 @@ S.workflows=S.workflows.filter(x=>x!==w);
 }
 }
 
-else if(cur==='conn'){
-
-S.conn[i]=!S.conn[i];
-
-audit('Connecteur démo',i+' '+(S.conn[i]?'activé':'désactivé'));
-
-Bus.emit(S.conn[i]?'CONNECTOR_CONNECTED':'CONNECTOR_DISCONNECTED','connecteurs',{name:i,simule:true});
-
-render();
-}
-
 else if(cur==='kb'&&a==='del'){
 askDel('Supprimer ?',()=>{S.kb=S.kb.filter(x=>x.id!==i);});
 }
@@ -2148,7 +2216,7 @@ await Orch.approve(errs.map(t=>t.id),mode);
 });
 
 on('#expres',()=>{
-const done=S.tasks.filter(t=>t.status==='terminée'&&t.result?.texte&&!t.result.simule).slice().reverse();
+const done=S.tasks.filter(t=>t.status==='terminée'&&t.result?.texte).slice().reverse();
 if(!done.length){toast('Aucun résultat à exporter.');return;}
 const md='# Résultats du Hub — '+fmt(now())+'\n\n'+done.map(t=>'## '+t.title+'\n\n*Agent : '+an(t.agent)+' · '+fmt(t.created)+(t.result.model?' · '+t.result.model:'')+'*\n\n'+t.result.texte).join('\n\n---\n\n');
 const a=document.createElement('a');
@@ -2239,7 +2307,7 @@ on('#sbPush',async()=>{
 try{
 readCfg();
 const n=await SB.push();
-toast(n+' agent(s) synchronisé(s).');
+toast(n+' agent(s) IA Gemini synchronisé(s).');
 }catch(e){
 toast('Synchronisation : '+e.message);
 }
@@ -2249,7 +2317,7 @@ on('#sbPull',async()=>{
 try{
 readCfg();
 const n=await SB.pull();
-toast(n+' agent(s) importé(s).');
+toast(n+' agent(s) IA Gemini importé(s).');
 }catch(e){
 toast('Import : '+e.message);
 }
@@ -2258,29 +2326,11 @@ toast('Import : '+e.message);
 /* MOTEUR IA */
 
 on('#modelSave',()=>{
-S.cfg.model=$('#defaultModel').value;
+const model=$('#defaultModel').value;
+if(!isSupportedAiModel(model)){toast('Modèle Gemini non autorisé.');return;}
+S.cfg.model=model;
 save();
-toast('Modèle enregistré.');
-});
-
-on('#applyModel',()=>{
-const mdl=$('#defaultModel').value;
-if(!mdl.startsWith('gemini-')){
-toast('Choisissez d’abord un modèle Gemini.');
-return;
-}
-S.cfg.model=mdl;
-let n=0;
-S.agents.forEach(a=>{
-if(a.model==='local-simulé'){
-a.model=mdl;
-n++;
-}
-});
-audit('Modèle appliqué',n+' agent(s) → '+mdl);
-save();
-render();
-toast(n+' agent(s) passé(s) sur '+mdl);
+toast('Modèle Gemini enregistré.');
 });
 
 const par=$('#par');
@@ -2302,7 +2352,7 @@ if(!SB.session)throw new Error('Connectez-vous d’abord.');
 const t0=Date.now();
 
 const d=await SB.gateway({
-model:String(S.cfg.model).startsWith('gemini-')?S.cfg.model:'gemini-3.5-flash-lite',
+model:isSupportedAiModel(S.cfg.model)?S.cfg.model:'gemini-3.5-flash-lite',
 prompt:'Réponds uniquement par le mot : OK',
 systemInstruction:'Tu es un test de connectivité.'
 });
@@ -2342,7 +2392,7 @@ copy.cfg.sbSession=null;
 
 const a=document.createElement('a');
 a.href=URL.createObjectURL(new Blob([JSON.stringify(copy,null,2)],{type:'application/json'}));
-a.download='mon_hub_multi_agents_v6.json';
+a.download='mon_hub_multi_agents_v7.json';
 a.click();
 URL.revokeObjectURL(a.href);
 });
@@ -2372,15 +2422,6 @@ toast('Fichier JSON invalide.');
 }
 };
 }
-
-/* IMPORT V1 */
-
-on('#leg',()=>{
-const n=importLegacy();
-toast(n?n+' agent(s) importé(s)':'Aucune donnée V1 trouvée');
-save();
-render();
-});
 
 /* RESET */
 
@@ -2417,9 +2458,6 @@ const d=await Persist.load();
 
 if(d){
 migrate(d);
-}else{
-const n=importLegacy();
-if(n)toast(n+' agent(s) importé(s) depuis V1');
 }
 
 const rec=recover();
