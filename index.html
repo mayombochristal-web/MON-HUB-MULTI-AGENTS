@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1633">
-<title>MON-HUB-MULTI-AGENTS V7</title>
+<title>MON-HUB-MULTI-AGENTS V7 PRO</title>
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -80,6 +80,20 @@ dialog label{display:block;margin:8px 0 2px;font-size:12px;color:var(--mu)}
 .bar i{flex:1;background:var(--ac);border-radius:3px 3px 0 0;min-height:2px}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;margin:0}
 hr{border:0;border-top:1px solid var(--bd);margin:14px 0}
+.hero-pro{background:linear-gradient(135deg,#0b1633 0%,#17376f 58%,#1d4ed8 100%);color:#fff;border:0;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 10px 30px #0b163322}
+.hero-pro h2{margin:0 0 5px;font-size:21px;letter-spacing:.01em}
+.hero-pro p{margin:0;color:#dbe7ff;max-width:760px}
+.hero-pro .tag{border-color:#ffffff55;color:#fff;background:#ffffff12}
+.agent-card-pro{display:flex;flex-direction:column;min-height:220px;gap:7px}
+.agent-card-pro .agent-name{font-size:15px;font-weight:600;line-height:1.3}
+.agent-card-pro .agent-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.agent-card-pro .agent-actions{margin-top:auto;padding-top:6px}
+.diagnostic-pro{margin-top:10px;border:1px solid var(--bd);border-radius:9px;padding:10px;background:var(--bg);font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+.diagnostic-pro .okline{color:var(--ok)}
+.diagnostic-pro .badline{color:var(--er)}
+.diagnostic-pro .warnline{color:var(--wa)}
+.duplicate-pro{border-color:#d69a38;background:color-mix(in srgb,var(--go) 7%,var(--sf))}
+.duplicate-pro summary{cursor:pointer;font-weight:600}
 @media(max-width:760px){
 #app{grid-template-columns:auto 1fr}
 aside{position:fixed;right:0;top:0;bottom:0;z-index:5}
@@ -105,7 +119,7 @@ main{padding:12px}
 'use strict';
 
 /* ==========================================================
-   MON HUB MULTI-AGENTS V7
+   MON HUB MULTI-AGENTS V7 PRO
    AI-Gateway · Gemini · Supabase
    Parallèle · Chaînage · Contexte KB/Mémoire · Session robuste
    ========================================================== */
@@ -193,6 +207,36 @@ const MODELS=[
 
 const isSupportedAiModel=model=>MODELS.includes(String(model||''));
 
+// Aligné sur l'origine autorisée dans la sauvegarde de la Gateway V4.
+// Ne pas remplacer par * : le serveur doit conserver une liste d'origines stricte.
+const GATEWAY_ALLOWED_ORIGIN='https://mayombochristal-web.github.io';
+function gatewayOriginInfo(){
+  const origin=window.location.origin;
+  const protocol=window.location.protocol;
+  const allowed=origin===GATEWAY_ALLOWED_ORIGIN;
+  let message='Origine autorisée par la configuration Gateway V4.';
+  if(protocol==='file:'||origin==='null'){
+    message='Le Hub est ouvert comme fichier local (origine null). La Gateway V4 n’autorise pas cette origine. Publie le Hub sur GitHub Pages puis ouvre son adresse HTTPS.';
+  }else if(!allowed){
+    message='Cette origine ne correspond pas à la liste CORS de la Gateway V4. Ouvre le Hub depuis '+GATEWAY_ALLOWED_ORIGIN+' ou fais valider explicitement cette nouvelle origine côté Edge Function.';
+  }
+  return {origin,allowed,expected:GATEWAY_ALLOWED_ORIGIN,message};
+}
+
+const normalizeAgentName=name=>String(name||'')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+
+function agentCompletenessScore(a){
+  const mission=String(a.mission||'').trim().length;
+  const instructions=String(a.instr||'').trim().length;
+  const caps=Array.isArray(a.caps)?new Set(a.caps.map(x=>String(x).trim()).filter(Boolean)).size:0;
+  const exactName=String(a.name||'')===String(a.name||'').trim()?20:0;
+  const model=isSupportedAiModel(a.model)?30:0;
+  const updated=Date.parse(a.updated_at||a.created||0)||0;
+  return mission+instructions*1.5+caps*65+exactName+model+Math.min(updated/1e12,20);
+}
+
 const agentManifest=(a,id)=>({
   id,
   name:a.name,
@@ -254,6 +298,63 @@ function archiveAgentRecord(agent,reason='Agent non pris en charge par le runtim
     archiveReason:reason,
     archivedAt:agent.archivedAt||now()
   });
+}
+
+function consolidateDuplicateAgents(){
+  const groups=new Map();
+  for(const agent of S.agents){
+    const key=normalizeAgentName(agent.name);
+    if(!key)continue;
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(agent);
+  }
+
+  const aliases=new Map();
+  const removed=new Set();
+  let archived=0;
+  for(const [key,group] of groups){
+    if(group.length<2)continue;
+    const ranked=[...group].sort((a,b)=>agentCompletenessScore(b)-agentCompletenessScore(a));
+    const primary=ranked[0];
+    primary.name=String(primary.name||'').trim();
+    for(const duplicate of ranked.slice(1)){
+      removed.add(duplicate);
+      if(duplicate.id)aliases.set(String(duplicate.id),primary.id);
+      if(duplicate.supabase_id)aliases.set(String(duplicate.supabase_id),primary.id);
+      const backup={...duplicate,duplicateOf:primary.id,duplicateGroup:key};
+      archiveAgentRecord(backup,
+        `Doublon de nom « ${primary.name} » : copie conservée dans les archives locales ; agent principal retenu : ${primary.name}.`);
+      archived++;
+    }
+  }
+
+  if(!archived)return 0;
+  S.agents=S.agents.filter(agent=>!removed.has(agent));
+
+  // Réaffecter les références locales vers l'agent principal sans perdre les tâches.
+  for(const task of S.tasks||[]){
+    if(task.agent&&aliases.has(String(task.agent)))task.agent=aliases.get(String(task.agent));
+  }
+  for(const workflow of S.workflows||[]){
+    for(const step of workflow.steps||[]){
+      if(step.type==='agent'&&step.val&&aliases.has(String(step.val)))step.val=aliases.get(String(step.val));
+    }
+  }
+  for(const item of S.kb||[]){
+    if(item.agent&&aliases.has(String(item.agent)))item.agent=aliases.get(String(item.agent));
+  }
+  for(const item of S.mem||[]){
+    if(item.agent&&aliases.has(String(item.agent)))item.agent=aliases.get(String(item.agent));
+  }
+
+  S.events=S.events||[];
+  S.events.unshift({
+    id:uid('ev'),type:'AGENT_DUPLICATES_ARCHIVED',source:'V7 Pro',ts:now(),
+    payload:{count:archived,action:'Copies archivées localement ; aucune ligne Supabase supprimée.'},
+    corr:uid('co'),prio:'normale'
+  });
+  S.events.length=Math.min(S.events.length,500);
+  return archived;
 }
 
 function isExecutableAiAgent(agent){
@@ -325,6 +426,10 @@ S.audit=Array.isArray(d.audit)?d.audit:[];
 S.events=Array.isArray(d.events)?d.events:[];
 S.cats=Array.isArray(d.cats)&&d.cats.length?d.cats:base.cats;
 if(!isSupportedAiModel(S.cfg.model))S.cfg.model='gemini-3.5-flash-lite';
+
+// Dédupliquer les noms répétés, notamment les variantes avec espaces en trop.
+// Les copies complètes sont conservées dans archivedAgents et dans l’export JSON.
+consolidateDuplicateAgents();
 }
 
 /* Tâches restées « en cours » après fermeture de la page : on les débloque. */
@@ -422,7 +527,11 @@ try{
 response=await fetch(c.url+path,{...opts,headers:this.headers(opts.headers||{})});
 }catch(e){
 if(e&&e.name==='AbortError')throw e;
-throw new Error('Erreur réseau ou CORS : '+e.message);
+const failed=new Error(`Échec réseau navigateur : ${e?.message||'Failed to fetch'}. Origine : ${window.location.origin}. URL cible : ${c.url}${path}. Causes possibles : CORS, origine non autorisée, fonction non déployée ou réseau.`);
+failed.code='FETCH_FAILED';
+failed.stage=path.includes('/functions/v1/ai-gateway')?'gateway-fetch':'supabase-fetch';
+failed.originalMessage=e?.message||'Failed to fetch';
+throw failed;
 }
 
 const raw=await response.text();
@@ -539,6 +648,13 @@ return !!this.session?.access_token;
 
 /* Appel Gateway : session fraîche, délai navigateur de 90 s, un seul rejeu sur 401. */
 async gateway(body){
+const originInfo=gatewayOriginInfo();
+if(!originInfo.allowed){
+  const error=new Error(originInfo.message);
+  error.code='GATEWAY_CORS_ORIGIN';
+  error.stage='origin';
+  throw error;
+}
 await this.ensureFresh();
 
 const once=async()=>{
@@ -593,6 +709,14 @@ save();
 
 async test(){
 return this.request('/rest/v1/agents?select=id&limit=1');
+},
+
+async testAuth(){
+if(!this.session?.access_token)throw new Error('Aucune session utilisateur active.');
+return this.request('/auth/v1/user',{
+  method:'GET',
+  headers:{Authorization:'Bearer '+this.session.access_token,Accept:'application/json'}
+});
 },
 
 async hasAgentManifestColumns(){
@@ -658,6 +782,7 @@ return id;
 
 async push(){
 if(!this.session?.user?.id)throw new Error('Connectez-vous d’abord.');
+consolidateDuplicateAgents();
 const candidates=S.agents.filter(isExecutableAiAgent);
 for(const a of candidates)await this.upsertAgent(a);
 return candidates.length;
@@ -693,6 +818,7 @@ const candidate={
   perms:r.permissions||{},
   state:r.status==='active'?'actif':r.status==='archived'?'archivé':'pause',
   created:r.created_at||now(),
+  updated_at:r.updated_at||null,
   runs:existing?.runs||0,
   fails:existing?.fails||0,
   version:Number(r.version)||1
@@ -721,9 +847,10 @@ else S.agents.push(candidate);
 imported++;
 }
 
+const duplicatesArchived=consolidateDuplicateAgents();
 save();
 render();
-return imported;
+return {received:rows.length,active:S.agents.length,duplicatesArchived};
 }
 };
 
@@ -1199,7 +1326,7 @@ const nb=()=>S.tasks.filter(t=>t.status==='validation').length;
 
 function nav(){
 $('#nav').innerHTML=
-`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V7</span></h1>`+
+`<h1 id="tg"><span>🏛️</span><span class="t">Mon Hub V7 Pro</span></h1>`+
 MODS.map(m=>
 `<button data-m="${m[0]}" class="${cur===m[0]?'on':''}" title="${m[2]}">
 <span>${m[1]}</span><span class="t">${m[2]}</span>
@@ -1383,44 +1510,57 @@ ${S.events.filter(e=>e.type==='AGENT_FAILED'||e.type==='SYSTEM_ALERT').slice(0,4
 
 agents(){
 const L=S.agents.filter(match);
+const duplicateArchives=(S.archivedAgents||[]).filter(a=>String(a.archiveReason||'').startsWith('Doublon de nom'));
+const uniqueCount=S.agents.length;
 
 return`
+<div class="hero-pro">
+  <div class="row" style="margin-bottom:8px">
+    <span class="tag">V7 PRO</span>
+    <span class="tag">Runtime Gemini réel</span>
+    <span class="sp"></span>
+    <span class="tag">${uniqueCount} agents opérationnels</span>
+  </div>
+  <h2>Vos agents IA opérationnels</h2>
+  <p>Un catalogue nettoyé : modèles autorisés uniquement, aucune simulation et aucune réponse fictive. Les copies redondantes sont conservées dans les archives locales.</p>
+</div>
 <div class="top">
-<h2>Agents IA</h2>
+<h2>Agents Gemini</h2>
 ${search()}
 <button class="btn p" id="add">Nouvel agent</button>
 </div>
-
+${duplicateArchives.length?`
+<div class="card duplicate-pro" style="margin-bottom:12px">
+  <div class="row"><b>${duplicateArchives.length} doublon(s) mis de côté</b><span class="sp"></span><span class="tag go">Conservés localement</span></div>
+  <p class="mu">Les copies ont été retirées de la liste active et leurs références locales ont été redirigées vers l’agent principal. Rien n’a été supprimé de Supabase.</p>
+  <details>
+    <summary>Voir les copies archivées</summary>
+    <div style="margin-top:8px">${duplicateArchives.map(a=>`<div class="mu" style="padding:6px 0;border-top:1px solid var(--bd)"><b>${esc(a.name||'Agent sans nom')}</b> · ${esc(a.archiveReason||'Doublon détecté')}</div>`).join('')}</div>
+  </details>
+</div>`:''}
 ${L.length?
 `<div class="g">
 ${L.map(a=>`
-<div class="card">
-<div class="row">
-<b>${esc(a.name)}</b>
-<span class="sp"></span>
-${stTag(a.state)}
-</div>
-
-<div class="mu">${esc(a.cat)} <span class="tag">IA Gemini</span></div>
-
-<p>${esc(a.mission)}</p>
-
-<div>${a.caps.map(c=>`<span class="tag">${esc(c)}</span>`).join('')}</div>
-
-<div class="mu" style="margin:6px 0">
-Modèle : ${esc(a.model)} · ${num(a.runs)} exéc. · ${num(a.fails)} échec(s)
-</div>
-
-<div class="row">
-<button class="btn s" data-a="edit" data-i="${a.id}">Modifier</button>
-<button class="btn s" data-a="dup" data-i="${a.id}">Dupliquer</button>
-<button class="btn s" data-a="tog" data-i="${a.id}">${a.state==='actif'?'Suspendre':'Activer'}</button>
-<button class="btn s" data-a="test" data-i="${a.id}">Tester</button>
-<button class="btn s d" data-a="del" data-i="${a.id}">Supprimer</button>
-</div>
+<div class="card agent-card-pro">
+  <div class="row">
+    <span class="agent-name">${esc(a.name)}</span>
+    <span class="sp"></span>
+    ${stTag(a.state)}
+  </div>
+  <div class="agent-meta"><span class="tag">IA Gemini</span><span class="tag">${esc(a.model)}</span></div>
+  <p style="margin:4px 0 0">${esc(a.mission||'Mission à préciser.')}</p>
+  <div>${(a.caps||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join('')}</div>
+  <div class="mu">${num(a.runs)} exécution(s) · ${num(a.fails)} échec(s) · version ${num(a.version)||1}</div>
+  <div class="row agent-actions">
+    <button class="btn s" data-a="edit" data-i="${a.id}">Modifier</button>
+    <button class="btn s" data-a="dup" data-i="${a.id}">Dupliquer</button>
+    <button class="btn s" data-a="tog" data-i="${a.id}">${a.state==='actif'?'Suspendre':'Activer'}</button>
+    <button class="btn s" data-a="test" data-i="${a.id}">Tester</button>
+    <button class="btn s d" data-a="del" data-i="${a.id}">Supprimer</button>
+  </div>
 </div>`).join('')}
 </div>`
-:empty('Aucun agent IA réel configuré. Créez un agent Gemini ou importez vos agents IA compatibles depuis Supabase.')}`;
+:empty('Aucun agent Gemini opérationnel. Importez les agents compatibles depuis Supabase ou créez un agent Gemini.')}`;
 },
 
 orch(){
@@ -1825,13 +1965,17 @@ ${MODELS.map(m=>`<option value="${esc(m)}" ${S.cfg.model===m?'selected':''}>${es
 <hr>
 
 <div class="row">
-<button class="btn p" id="gwTest">Tester la Gateway IA</button>
+<button class="btn p" id="gwTest">Lancer le diagnostic Gateway</button>
 <span class="mu" id="gwOut"></span>
 </div>
-
+<div class="diagnostic-pro" id="gwDiag">
+  <div><b>Origine actuelle :</b> ${esc(gatewayOriginInfo().origin)}</div>
+  <div><b>Origine autorisée par la sauvegarde Gateway V4 :</b> ${esc(GATEWAY_ALLOWED_ORIGIN)}</div>
+  <div class="${gatewayOriginInfo().allowed?'okline':'badline'}">${esc(gatewayOriginInfo().message)}</div>
+  <div class="mu" style="margin-top:5px">Le diagnostic séparera Supabase REST, l’identité Auth et l’appel Edge Function. Verify JWT reste activé. Aucune clé Gemini ou service_role ne doit être placée dans le navigateur.</div>
+</div>
 <p class="mu">
-Gemini est appelé via la Supabase AI Gateway (cascade de modèles intégrée).
-La clé API ne doit jamais être placée dans ce fichier.
+Gemini est appelé uniquement via la Supabase Edge Function ai-gateway. Un échec « Failed to fetch » ne prouve pas à lui seul une panne Gemini : il peut venir du CORS, de l’origine du navigateur, du déploiement de la fonction ou du réseau.
 </p>
 </div>
 
@@ -1876,7 +2020,7 @@ Importer JSON
 <button class="btn d" id="rst">Réinitialiser</button>
 </div>
 
-<p class="mu">Version ${VER} · stockage IndexedDB · l'export n'inclut ni session ni jetons.</p>
+<p class="mu">Version ${VER} PRO · stockage IndexedDB · l'export n'inclut ni session ni jetons.</p>
 </div>`;
 }
 };
@@ -1897,6 +2041,12 @@ g?'Modifier l’agent':'Nouvel agent',
 ],
 o=>{
 const caps=o.caps.split(',').map(s=>s.trim()).filter(Boolean);
+const normalizedName=normalizeAgentName(o.name);
+const sameName=S.agents.find(x=>x.id!==(g?.id)&&normalizeAgentName(x.name)===normalizedName);
+if(sameName){
+  toast(`Un agent nommé « ${sameName.name} » existe déjà. Modifie celui-ci ou examine les archives.`);
+  return;
+}
 
 let a;
 
@@ -2316,8 +2466,8 @@ toast('Synchronisation : '+e.message);
 on('#sbPull',async()=>{
 try{
 readCfg();
-const n=await SB.pull();
-toast(n+' agent(s) IA Gemini importé(s).');
+const result=await SB.pull();
+toast(`${result.active} agent(s) opérationnel(s) ; ${result.duplicatesArchived} doublon(s) écarté(s) ; ${result.received} ligne(s) lue(s) dans Supabase.`);
 }catch(e){
 toast('Import : '+e.message);
 }
@@ -2343,26 +2493,72 @@ save();
 }
 
 on('#gwTest',async()=>{
-const o=$('#gwOut');
-o.textContent='Test en cours…';
+const out=$('#gwOut');
+const panel=$('#gwDiag');
+out.textContent='Diagnostic en cours…';
+if(panel)panel.innerHTML='<div>Vérification de la configuration, de Supabase REST, de la session Auth et de la Gateway…</div>';
+const lines=[];
+const add=(label,detail,kind='okline')=>lines.push(`<div class="${kind}"><b>${esc(label)} :</b> ${esc(detail)}</div>`);
 
 try{
-if(!SB.session)throw new Error('Connectez-vous d’abord.');
+  if(!SB.session?.access_token)throw new Error('Session utilisateur absente. Connecte-toi dans Paramètres.');
 
-const t0=Date.now();
+  const origin=gatewayOriginInfo();
+  add('Origine du navigateur',origin.origin,origin.allowed?'okline':'badline');
+  add('Origine autorisée',origin.expected,'');
 
-const d=await SB.gateway({
-model:isSupportedAiModel(S.cfg.model)?S.cfg.model:'gemini-3.5-flash-lite',
-prompt:'Réponds uniquement par le mot : OK',
-systemInstruction:'Tu es un test de connectivité.'
-});
+  try{
+    await SB.test();
+    add('Supabase REST','Connexion au projet réussie.');
+  }catch(e){
+    add('Supabase REST',e.message,'badline');
+    throw Object.assign(new Error('Étape Supabase REST échouée : '+e.message),{stage:'rest',cause:e});
+  }
 
-o.textContent='✅ '+(d.provider||'gemini')+' · '+(d.model||'')+(d.fallback?' (secours)':'')+
-' · '+(Date.now()-t0)+' ms'+(d.gateway?' · gateway '+d.gateway:'');
+  try{
+    const identity=await SB.testAuth();
+    add('Supabase Auth',identity?.id?'Session vérifiée.':'Réponse reçue, identité absente.');
+    if(!identity?.id)throw new Error('Identité utilisateur absente.');
+  }catch(e){
+    add('Supabase Auth',e.message,'badline');
+    throw Object.assign(new Error('Étape Auth échouée : '+e.message),{stage:'auth',cause:e});
+  }
+
+  if(!origin.allowed){
+    add('Gateway','Appel non envoyé : l’origine actuelle ne figure pas dans la liste CORS connue de la Gateway V4.','badline');
+    throw Object.assign(new Error(origin.message),{stage:'cors',code:'GATEWAY_CORS_ORIGIN'});
+  }
+
+  const t0=Date.now();
+  try{
+    const d=await SB.gateway({
+      model:isSupportedAiModel(S.cfg.model)?S.cfg.model:'gemini-3.5-flash-lite',
+      prompt:'Réponds uniquement par le mot : OK',
+      systemInstruction:'Tu es un test de connectivité.'
+    });
+    if(!d||!d.reply)throw new Error('La fonction a répondu sans contenu.');
+    add('Gateway',`Réponse réelle reçue de ${d.model||'Gemini'} en ${Date.now()-t0} ms.`);
+    out.textContent='✅ Gateway opérationnelle';
+  }catch(e){
+    if(e.code==='FETCH_FAILED'||String(e.message).includes('Failed to fetch')){
+      add('Gateway','Le navigateur n’a pas pu lire la réponse. Si l’origine est correcte, vérifier la réponse OPTIONS CORS, le déploiement de ai-gateway, Verify JWT et la connectivité réseau.','badline');
+      add('Détail technique',e.message,'warnline');
+      throw Object.assign(new Error('Échec de transport navigateur vers ai-gateway. Voir le diagnostic ci-dessous.'),{stage:'gateway-fetch',cause:e});
+    }
+    add('Gateway',e.message+(e.status?' (HTTP '+e.status+')':''),'badline');
+    throw Object.assign(new Error(e.message),{stage:'gateway-response',cause:e});
+  }
 }catch(e){
-o.textContent='❌ '+e.message+(e.status?' (HTTP '+e.status+')':'');
+  if(!lines.some(x=>x.includes('Gateway')))add('Diagnostic',e.message,'badline');
+  out.textContent='❌ '+e.message;
+  if(panel)panel.innerHTML=lines.join('')+
+    `<div class="mu" style="margin-top:8px"><b>Étape :</b> ${esc(e.stage||'pré-contrôle')} · <b>Origine :</b> ${esc(window.location.origin)} · <b>Endpoint :</b> ${esc((SB.config().url||'')+'/functions/v1/ai-gateway')}</div>`;
+  return;
 }
+if(panel)panel.innerHTML=lines.join('')+
+  `<div class="mu" style="margin-top:8px"><b>Origine :</b> ${esc(window.location.origin)} · <b>Endpoint :</b> ${esc((SB.config().url||'')+'/functions/v1/ai-gateway')}</div>`;
 });
+
 
 on('#rulesSave',()=>{
 S.cfg.rules=clean($('#rules').value).slice(0,1500);
